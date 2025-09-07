@@ -1,10 +1,11 @@
-
-
 import React, { createContext, useContext, useCallback, ReactNode, useState, useEffect } from 'react';
+// FIX: Correct import paths
 import { SettingsContext } from './AppContext';
-import { Language, Locale, LocalizationContextType } from '../types';
+import { Locale, LocalizationContextType, AppSettings } from '../types';
 
-// Hardcode English translations in a nested format to guarantee first load and match lookup logic.
+// The hardcoded default English translations. This ensures the app works on first load
+// and provides a complete fallback if fetching other locales fails.
+// This object MUST match the structure of /locales/en.json.
 const enDefault = {
     "common": {
         "close": "Close",
@@ -52,8 +53,8 @@ const enDefault = {
         "addToPath": {
             "title": "Add to Learning Path",
             "heading": "Add to Path",
-            "noPaths": "No paths yet.",
-            "create": "+ Create new path",
+            "noPaths": "No articles yet.",
+            "create": "+ Create new",
             "newPathPlaceholder": "New path name..."
         }
     },
@@ -77,6 +78,8 @@ const enDefault = {
         "thinking": "Thinking...",
         "error": "I'm sorry, I'm having trouble responding right now. Please try again in a moment.",
         "placeholder": "Ask a follow-up question... (Ctrl+Enter)",
+        "placeholderLoading": "Wait for article to load...",
+        "loadingArticle": "Preparing for your questions on {{topic}}...",
         "fallbackQuestions": [
             "Summarize this in 3 bullet points",
             "What are the key concepts?",
@@ -116,7 +119,7 @@ const enDefault = {
         "help": {
             "title": "Help"
         },
-        "noEntries": "No entries.",
+        "noEntries": "No entries yet.",
         "deleteEntry": "Delete entry",
         "clearAll": "Clear All {{title}}"
     },
@@ -136,6 +139,7 @@ const enDefault = {
             "viewBookmarks": "View Bookmarks",
             "viewPaths": "View Learning Paths",
             "viewSnapshots": "View Snapshots",
+            "viewImages": "View Image Library",
             "openSettings": "Open Settings",
             "viewHelp": "View Help",
             "cosmicLeap": "Cosmic Leap",
@@ -153,23 +157,23 @@ const enDefault = {
             "accentColor": {
                 "label": "Accent Color",
                 "description": "Choose the main color for UI elements.",
-                "amber": "Amber",
-                "sky": "Sky",
-                "rose": "Rose",
-                "emerald": "Emerald"
+                "options": {
+                    "amber": "Amber", "sky": "Sky", "rose": "Rose", "emerald": "Emerald"
+                }
             },
             "font": {
                 "label": "Font Family",
                 "description": "Choose the font for the app.",
-                "artistic": "Artistic",
-                "modern": "Modern"
+                 "options": {
+                    "artistic": "Artistic (Lora/Inter)", "modern": "Modern (Roboto)"
+                }
             },
             "textSize": {
                 "label": "Text Size",
                 "description": "Adjust the text size in articles.",
-                "sm": "Small",
-                "base": "Standard",
-                "lg": "Large"
+                "options": {
+                    "sm": "Small", "base": "Standard", "lg": "Large"
+                }
             }
         },
         "content": {
@@ -177,23 +181,25 @@ const enDefault = {
             "language": {
                 "label": "Language",
                 "description": "Set the display and content language.",
-                "de": "Deutsch",
-                "en": "English"
+                "options": {
+                    "de": "Deutsch", "en": "English"
+                }
             },
             "articleLength": {
                 "label": "Article Length",
                 "description": "Set the preferred length for generated articles.",
-                "concise": "Concise (approx. 300 words)",
-                "standard": "Standard (approx. 600 words)",
-                "in-depth": "In-depth (900+ words)"
+                "options": {
+                    "concise": "Concise (approx. 300 words)",
+                    "standard": "Standard (approx. 600 words)",
+                    "in-depth": "In-depth (900+ words)"
+                }
             },
             "imageStyle": {
                 "label": "Image Style",
                 "description": "Define the artistic style for AI-generated images.",
-                "photorealistic": "Photorealistic",
-                "artistic": "Artistic",
-                "vintage": "Vintage",
-                "minimalist": "Minimalist"
+                "options": {
+                    "photorealistic": "Photorealistic", "artistic": "Artistic", "vintage": "Vintage", "minimalist": "Minimalist"
+                }
             },
             "autoLoad": {
                 "label": "Auto-load Images",
@@ -210,6 +216,7 @@ const enDefault = {
             "clearBookmarks": "Clear Bookmarks",
             "clearPaths": "Clear Learning Paths",
             "clearSnapshots": "Clear Snapshots",
+            "clearImages": "Clear Image Library",
             "export": "Export All Data",
             "import": "Import Data"
         }
@@ -219,68 +226,12 @@ const enDefault = {
         "close": "Close help window",
         "tab": {
             "tutorial": "Step-by-step Guide",
-            "glossary": "Knowledge Base & Glossary"
+            "glossary": "Knowledge Base & Glossary",
+            "about": "About Codex"
         },
-        "tutorialContent": {
-            "intro": "Welcome to Codex! This guide will walk you through the core features to help you get the most out of your knowledge exploration.",
-            "and": "and",
-            "section1": {
-                "title": "Starting Your Journey",
-                "p1": "There are multiple ways to begin exploring:",
-                "li1": { "label": "Direct Search", "text": "Type any topic you're curious about into the main search bar." },
-                "li2": { "label": "Starter Topics", "text": "Choose one of the curated topics on the welcome screen for instant inspiration." },
-                "li3": { "label": "Cosmic Leap", "text": "Click the Cosmic Leap button to be taken to a random, serendipitous topic." }
-            },
-            "section2": {
-                "title": "Engaging with an Article",
-                "p1": "Once an article is generated, you have several tools at your disposal:",
-                "li1": { "label": "Text Interaction", "text": "Highlight any word or phrase to bring up a quick menu. You can", "p2": "The AI will provide a concise answer in a pop-up modal." },
-                "li2": { "label": "Image Generation", "text": "Each section has a prompt for a descriptive image. Click 'Generate Image' to have the AI create a visual representation." },
-                "li3": { "label": "Quick Summaries", "text": "Use the summary buttons (TL;DR, ELI5, etc.) below the introduction to get different perspectives on the content." },
-                "li4": { "label": "Timeline", "text": "For historical topics, a timeline of key events provides a chronological overview. You can click on events to learn more." }
-            },
-            "section3": {
-                "title": "Conversing with Athena",
-                "p1": "The panel on the right is your AI Copilot, Athena. She has full context of the article you're reading.",
-                "li1": { "label": "Ask Anything:", "text": "Ask for clarification, deeper insights, or how concepts relate to each other." },
-                "li2": { "label": "Suggested Questions:", "text": "Use the suggestion chips to ask thoughtful questions curated by the AI." }
-            },
-            "section4": {
-                "title": "Connecting Knowledge",
-                "p1": "Codex is designed to help you discover connections between topics.",
-                "li1": { "label": "Synapse Graph:", "text": "At the bottom of each article, this graph shows you related topics. Click any node to generate a new article and continue your journey." },
-                "li2": { "label": "In-Article Links:", "text": "Clicking on events in the timeline will also start a search for that new topic." },
-                "li3": { "label": "Cosmic Leap:", "text": "Use this feature from the Synapse Graph to jump to a tangentially related but interesting new subject." }
-            },
-            "section5": {
-                "title": "Managing Your Data",
-                "p1": "Codex saves all your data in your browser. Access and manage it using the icons in the top-right header:",
-                "li1": { "label": "History:", "text": "Revisit topics you've recently explored." },
-                "li2": { "label": "Bookmarks:", "text": "Save your favorite or most important articles for easy access." },
-                "li3": { "label": "Learning Paths:", "text": "Group related articles together to form a custom curriculum on a subject." },
-                "li4": { "label": "Snapshots:", "text": "Save an entire session—including the article, chat history, and related topics—to restore later." }
-            }
-        },
-        "glossaryContent": {
-            "intro": "This glossary explains the key terms and concepts within the Codex application.",
-            "sections": [
-                {
-                    "title": "Core Concepts",
-                    "terms": [
-                        { "name": "Athena AI Copilot", "description": "The contextual chat assistant available for each article. It helps you delve deeper into the subject matter by answering questions." },
-                        { "name": "Synapse Graph", "description": "An interactive, node-based visualization that displays topics related to the current article, encouraging exploration." },
-                        { "name": "Cosmic Leap", "description": "A feature that suggests a serendipitous, tangentially related topic, designed to broaden your horizons in unexpected ways." }
-                    ]
-                },
-                {
-                    "title": "Data Management",
-                    "terms": [
-                        { "name": "Learning Path", "description": "A user-curated collection of articles. You can create paths to group topics together for focused learning." },
-                        { "name": "Session Snapshot", "description": "A complete save-state of your current session, including the main article, chat history with Athena, and the Synapse Graph topics. Snapshots can be restored at any time." }
-                    ]
-                }
-            ]
-        }
+        "tutorialContent": { "intro": "Welcome to Codex! This guide will walk you through the core features to help you get the most out of your knowledge exploration.", "and": "and", "section1": { "title": "Starting Your Journey", "p1": "There are multiple ways to begin exploring:", "li1": { "label": "Direct Search", "text": "Type any topic you're curious about into the main search bar." }, "li2": { "label": "Starter Topics", "text": "Choose one of the curated topics on the welcome screen for instant inspiration." }, "li3": { "label": "Cosmic Leap", "text": "Click the Cosmic Leap button to be taken to a random, serendipitous topic." } }, "section2": { "title": "Engaging with an Article", "p1": "Once an article is generated, you have several tools at your disposal:", "li1": { "label": "Text Interaction", "text": "Highlight any word or phrase to bring up a quick menu. You can", "p2": "The AI will provide a concise answer in a pop-up modal." }, "li2": { "label": "Image Generation", "text": "Each section has a prompt for a descriptive image. Click 'Generate Image' to have the AI create a visual representation." }, "li3": { "label": "Quick Summaries", "text": "Use the summary buttons (TL;DR, ELI5, etc.) below the introduction to get different perspectives on the content." }, "li4": { "label": "Timeline", "text": "For historical topics, a timeline of key events provides a chronological overview. You can click on events to learn more." } }, "section3": { "title": "Conversing with Athena", "p1": "The panel on the right is your AI Copilot, Athena. She has full context of the article you're reading.", "li1": { "label": "Ask Anything:", "text": "Ask for clarification, deeper insights, or how concepts relate to each other." }, "li2": { "label": "Suggested Questions:", "text": "Use the suggestion chips to ask thoughtful questions curated by the AI." } }, "section4": { "title": "Connecting Knowledge", "p1": "Codex is designed to help you discover connections between topics.", "li1": { "label": "Synapse Graph:", "text": "At the bottom of each article, this graph shows you related topics. Click any node to generate a new article and continue your journey." }, "li2": { "label": "In-Article Links:", "text": "Clicking on events in the timeline will also start a search for that new topic." }, "li3": { "label": "Cosmic Leap:", "text": "Use this feature from the Synapse Graph to jump to a tangentially related but interesting new subject." } }, "section5": { "title": "Managing Your Data", "p1": "Codex saves all your data in your browser. Access and manage it using the icons in the top-right header:", "li1": { "label": "History:", "text": "Revisit topics you've recently explored." }, "li2": { "label": "Bookmarks:", "text": "Save your favorite or most important articles for easy access." }, "li3": { "label": "Learning Paths:", "text": "Group related articles together to form a custom curriculum on a subject." }, "li4": { "label": "Snapshots:", "text": "Save an entire session—including the article, chat history, and related topics—to restore later." } } },
+        "glossaryContent": { "intro": "This glossary explains the key terms and concepts within the Codex application.", "sections": [ { "title": "Core Concepts", "terms": [ { "name": "Athena AI Copilot", "description": "The contextual chat assistant available for each article. It helps you delve deeper into the subject matter by answering questions." }, { "name": "Synapse Graph", "description": "An interactive, node-based visualization that displays topics related to the current article, encouraging exploration." }, { "name": "Cosmic Leap", "description": "A feature that suggests a serendipitous, tangentially related topic, designed to broaden your horizons in unexpected ways." } ] }, { "title": "Data Management", "terms": [ { "name": "Learning Path", "description": "A user-curated collection of articles. You can create paths to group topics together for focused learning." }, { "name": "Session Snapshot", "description": "A complete save-state of your current session, including the main article, chat history with Athena, and the Synapse Graph topics. Snapshots can be restored at any time." } ] } ] },
+        "aboutContent": { "intro": "Codex is a proof-of-concept application designed to showcase the power of generative AI for knowledge exploration and discovery.", "aiStudio": { "title": "AI Studio Project", "description": "This web app was created from a Google AI Studio project. You can find the original prompt and experiment with it yourself.", "link": "View project in AI Studio" }, "github": { "title": "Source Code on GitHub", "description": "The complete source code for Codex is available on GitHub. Feel free to explore, fork, and contribute.", "link": "View repository on GitHub" } }
     },
     "entry": {
         "title": "Welcome to Codex",
@@ -288,29 +239,20 @@ const enDefault = {
         "getStarted": "Get Started",
         "tutorial": {
             "title": "Quick Guide",
-            "step1": {
-                "title": "1. Search & Discover",
-                "description": "Start with a topic in the search bar, pick a suggestion, or take a leap of faith with 'Cosmic Leap'."
-            },
-            "step2": {
-                "title": "2. Interact & Understand",
-                "description": "Highlight any text for definitions, explanations, or AI images. Use summaries to quickly grasp complex topics."
-            },
-            "step3": {
-                "title": "3. AI Copilot 'Athena'",
-                "description": "Ask Athena questions about the article in the right-hand panel. She has the context and helps you dig deeper."
-            },
-            "step4": {
-                "title": "4. Connect Knowledge",
-                "description": "The 'Synapse Graph' at the end of each article shows you related topics. Click a node to continue your journey."
-            }
+            "step1": { "title": "1. Search & Discover", "description": "Start with a topic in the search bar, pick a suggestion, or take a leap of faith with 'Cosmic Leap'." },
+            "step2": { "title": "2. Interact & Understand", "description": "Highlight any text for definitions, explanations, or AI images. Use summaries to quickly grasp complex topics." },
+            "step3": { "title": "3. AI Copilot 'Athena'", "description": "Ask Athena questions about the article in the right-hand panel. She has the context and helps you dig deeper." },
+            "step4": { "title": "4. Connect Knowledge", "description": "The 'Synapse Graph' at the end of each article shows you related topics. Click a node to continue your journey." }
         },
         "startExploring": "Start Exploring"
     },
     "prompts": {
         "snapshotName": "Enter a name for this session snapshot:",
         "confirmClearAll": "Are you sure you want to delete all {{name}}? This cannot be undone.",
-        "confirmDeletePath": "Are you sure you want to delete the learning path \"{{pathName}}\"? This action cannot be undone."
+        "confirmDeletePath": "Are you sure you want to delete the learning path \"{{pathName}}\"? This action cannot be undone.",
+        "confirmDeleteSnapshot": "Are you sure you want to delete the snapshot \"{{name}}\"? This action cannot be undone.",
+        "confirmDeleteImage": "Are you sure you want to permanently delete this image?",
+        "confirmClearLibrary": "Are you sure you want to permanently delete all images in your library? This cannot be undone."
     },
     "notifications": {
         "bookmarkRemoved": "Removed bookmark for \"{{topic}}\".",
@@ -318,6 +260,7 @@ const enDefault = {
         "articleAddedToPath": "Added \"{{articleTitle}}\" to learning path \"{{pathName}}\".",
         "pathCreated": "Created learning path \"{{pathName}}\".",
         "snapshotSaved": "Snapshot \"{{name}}\" saved!",
+        "snapshotDeleted": "Snapshot \"{{name}}\" deleted.",
         "articleRemovedFromPath": "\"{{articleTitle}}\" has been removed from the path \"{{pathName}}\".",
         "pathDeleted": "Learning path \"{{pathName}}\" deleted.",
         "clearedAll": "All {{name}} cleared.",
@@ -327,7 +270,11 @@ const enDefault = {
         "imagesGeneratedSuccess": "{{count}} image(s) successfully generated.",
         "findingConnection": "Finding a surprising connection...",
         "cosmicLeapFound": "Cosmic Leap found: {{topic}}",
-        "snapshotRestored": "Restored snapshot \"{{name}}\"."
+        "snapshotRestored": "Restored snapshot \"{{name}}\".",
+        "promptCopied": "Image prompt copied to clipboard!",
+        "imageDownloaded": "Image download started.",
+        "imageDeleted": "Image deleted from library.",
+        "libraryCleared": "Image library cleared."
     },
     "errors": {
         "unknown": "An unknown error occurred.",
@@ -337,7 +284,23 @@ const enDefault = {
         "cosmicLeapFailed": "Could not find a topic for a cosmic leap.",
         "fileRead": "File could not be read",
         "invalidBackup": "Invalid backup file structure.",
-        "importFailed": "Failed to import data."
+        "importFailed": "Failed to import data.",
+        "exportFailed": "Failed to export data.",
+        "fetchImagesFailed": "Failed to fetch images from library.",
+        "deleteImageFailed": "Failed to delete image.",
+        "clearLibraryFailed": "Failed to clear image library."
+    },
+    "imageLibrary": {
+        "title": "Image Library",
+        "loading": "Loading images...",
+        "clear": "Clear Library",
+        "download": "Download Image",
+        "copyPrompt": "Copy Prompt",
+        "delete": "Delete Image",
+        "empty": {
+            "title": "Your Library is Empty",
+            "description": "Images you generate in articles will appear here for you to browse and reuse."
+        }
     }
 };
 
@@ -370,7 +333,8 @@ export const LocalizationProvider = ({ children }: { children: ReactNode }) => {
     }, [locale, translations.de]);
     
     const setLocale = (newLocale: Locale) => {
-        setSettings(prev => ({ ...prev, language: newLocale as Language }));
+        // FIX: Remove incorrect type cast
+        setSettings((prev: AppSettings) => ({ ...prev, language: newLocale }));
     };
 
     const t = useCallback((key: string, params?: { [key: string]: string | number | undefined }) => {

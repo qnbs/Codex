@@ -1,6 +1,7 @@
 
 // FIX: Add GenerateImagesResponse type for generateImages API call.
 import { GoogleGenAI, Type, GenerateContentResponse, Chat, GenerateImagesResponse } from "@google/genai";
+// FIX: Correct import path for types
 import { ArticleData, RelatedTopic, ChatMessage, StarterTopic, AppSettings, SummaryType, Locale } from '../types';
 import { Prompts } from './prompts';
 

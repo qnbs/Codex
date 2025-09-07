@@ -1,179 +1,186 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-    CloseIcon, BookOpenIcon, SearchIcon, SparklesIcon, CosmicLeapIcon, TextSelectIcon, 
-    WandIcon, ImageIcon, SummarizeIcon, TimelineIcon, LightbulbIcon, HistoryIcon, 
-    BookmarkIcon, PathIcon, CameraIcon, CogIcon 
-} from './IconComponents';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { CloseIcon } from './IconComponents';
 import { useLocalization } from '../context/LocalizationContext';
 
-const TutorialSection = ({ title, icon: Icon, children }: { title: string, icon: React.FC<{className?: string}>, children: React.ReactNode }) => (
-    <details className="p-4 bg-gray-800/50 rounded-lg group" open>
-        <summary className="font-bold text-lg cursor-pointer flex items-center gap-3 text-gray-200 group-hover:text-accent transition-colors">
-            <Icon className="w-6 h-6 text-accent flex-shrink-0" />
-            {title}
-        </summary>
-        <div className="mt-4 pl-9 prose prose-invert prose-sm text-gray-400 max-w-none">
-            {children}
-        </div>
-    </details>
-);
-
-const GlossaryTerm = ({ name, children }: { name: string, children: React.ReactNode }) => (
-    <div className="py-4 border-b border-gray-700/50">
-        <h4 className="font-bold text-accent text-md">{name}</h4>
-        <p className="text-gray-400 text-sm mt-1">{children}</p>
-    </div>
-);
-
+interface HelpGuideProps {
+    isVisible: boolean;
+    onClose: () => void;
+}
 
 const TutorialContent = () => {
     const { t } = useLocalization();
-    const tutorialData = t('help.tutorialContent');
+    const tutorial = t('help.tutorialContent');
+
+    const renderListItem = (item: { label: string; text: string; p2?: string; }, key: string) => (
+        <li key={key} className="mb-2">
+            <p><strong>{item.label}</strong> {item.text}</p>
+            {item.p2 && <p className="mt-1 pl-4">{item.p2}</p>}
+        </li>
+    );
 
     return (
-        <div className="space-y-4">
-            <p className="text-gray-400 mb-6">{tutorialData.intro}</p>
+        <div className="prose prose-invert prose-sm max-w-none">
+            <p className="lead">{tutorial.intro}</p>
             
-            <TutorialSection title={tutorialData.section1.title} icon={SparklesIcon}>
-                <p>{tutorialData.section1.p1}</p>
-                <ul className="list-disc pl-5">
-                    <li><strong>{tutorialData.section1.li1.label} <SearchIcon className="w-4 h-4 inline-block" />:</strong> {tutorialData.section1.li1.text}</li>
-                    <li><strong>{tutorialData.section1.li2.label} <SparklesIcon className="w-4 h-4 inline-block" />:</strong> {tutorialData.section1.li2.text}</li>
-                    <li><strong>{tutorialData.section1.li3.label} <CosmicLeapIcon className="w-4 h-4 inline-block" />:</strong> {tutorialData.section1.li3.text}</li>
-                </ul>
-            </TutorialSection>
-
-            <TutorialSection title={tutorialData.section2.title} icon={BookOpenIcon}>
-                 <p>{tutorialData.section2.p1}</p>
-                <ul className="list-disc pl-5">
-                    <li><strong>{tutorialData.section2.li1.label} <TextSelectIcon className="w-4 h-4 inline-block" />:</strong> {tutorialData.section2.li1.text} <code className="text-xs">{t('interaction.define')}</code>, <code className="text-xs">{t('interaction.explain')}</code> <WandIcon className="w-3 h-3 inline-block" />, {tutorialData.and} <code className="text-xs">{t('interaction.visualize')}</code> <ImageIcon className="w-3 h-3 inline-block" />. {tutorialData.section2.li1.p2}</li>
-                    <li><strong>{tutorialData.section2.li2.label} <ImageIcon className="w-4 h-4 inline-block" />:</strong> {tutorialData.section2.li2.text}</li>
-                    <li><strong>{tutorialData.section2.li3.label} <SummarizeIcon className="w-4 h-4 inline-block" />:</strong> {tutorialData.section2.li3.text}</li>
-                    <li><strong>{tutorialData.section2.li4.label} <TimelineIcon className="w-4 h-4 inline-block" />:</strong> {tutorialData.section2.li4.text}</li>
-                </ul>
-            </TutorialSection>
-
-            <TutorialSection title={tutorialData.section3.title} icon={LightbulbIcon}>
-                <p>{tutorialData.section3.p1}</p>
-                 <ul className="list-disc pl-5">
-                    <li><strong>{tutorialData.section3.li1.label}</strong> {tutorialData.section3.li1.text}</li>
-                    <li><strong>{tutorialData.section3.li2.label}</strong> {tutorialData.section3.li2.text}</li>
-                </ul>
-            </TutorialSection>
+            {/* Section 1 */}
+            <h3>{tutorial.section1.title}</h3>
+            <p>{tutorial.section1.p1}</p>
+            <ul>
+                {renderListItem(tutorial.section1.li1, 's1li1')}
+                {renderListItem(tutorial.section1.li2, 's1li2')}
+                {renderListItem(tutorial.section1.li3, 's1li3')}
+            </ul>
             
-            <TutorialSection title={tutorialData.section4.title} icon={CosmicLeapIcon}>
-                <p>{tutorialData.section4.p1}</p>
-                 <ul className="list-disc pl-5">
-                    <li><strong>{tutorialData.section4.li1.label}</strong> {tutorialData.section4.li1.text}</li>
-                    <li><strong>{tutorialData.section4.li2.label}</strong> {tutorialData.section4.li2.text}</li>
-                    <li><strong>{tutorialData.section4.li3.label}</strong> {tutorialData.section4.li3.text}</li>
-                </ul>
-            </TutorialSection>
+            {/* Section 2 */}
+            <h3>{tutorial.section2.title}</h3>
+            <p>{tutorial.section2.p1}</p>
+            <ul>
+                <li key="s2li1" className="mb-2"><p><strong>{tutorial.section2.li1.label}</strong> {tutorial.section2.li1.text} <strong>Define</strong>, <strong>Explain</strong>, {t('help.tutorialContent.and')} <strong>Visualize</strong>. {tutorial.section2.li1.p2}</p></li>
+                {renderListItem(tutorial.section2.li2, 's2li2')}
+                {renderListItem(tutorial.section2.li3, 's2li3')}
+                {renderListItem(tutorial.section2.li4, 's2li4')}
+            </ul>
 
-            <TutorialSection title={tutorialData.section5.title} icon={CogIcon}>
-                 <p>{tutorialData.section5.p1}</p>
-                <ul className="list-disc pl-5">
-                    <li><strong>{tutorialData.section5.li1.label} <HistoryIcon className="w-4 h-4 inline-block" />:</strong> {tutorialData.section5.li1.text}</li>
-                    <li><strong>{tutorialData.section5.li2.label} <BookmarkIcon className="w-4 h-4 inline-block" />:</strong> {tutorialData.section5.li2.text}</li>
-                    <li><strong>{tutorialData.section5.li3.label} <PathIcon className="w-4 h-4 inline-block" />:</strong> {tutorialData.section5.li3.text}</li>
-                    <li><strong>{tutorialData.section5.li4.label} <CameraIcon className="w-4 h-4 inline-block" />:</strong> {tutorialData.section5.li4.text}</li>
-                </ul>
-            </TutorialSection>
+            {/* Section 3 */}
+            <h3>{tutorial.section3.title}</h3>
+            <p>{tutorial.section3.p1}</p>
+            <ul>
+                {renderListItem(tutorial.section3.li1, 's3li1')}
+                {renderListItem(tutorial.section3.li2, 's3li2')}
+            </ul>
+
+            {/* Section 4 */}
+            <h3>{tutorial.section4.title}</h3>
+            <p>{tutorial.section4.p1}</p>
+            <ul>
+                {renderListItem(tutorial.section4.li1, 's4li1')}
+                {renderListItem(tutorial.section4.li2, 's4li2')}
+                {renderListItem(tutorial.section4.li3, 's4li3')}
+            </ul>
+
+            {/* Section 5 */}
+            <h3>{tutorial.section5.title}</h3>
+            <p>{tutorial.section5.p1}</p>
+            <ul>
+                {renderListItem(tutorial.section5.li1, 's5li1')}
+                {renderListItem(tutorial.section5.li2, 's5li2')}
+                {renderListItem(tutorial.section5.li3, 's5li3')}
+                {renderListItem(tutorial.section5.li4, 's5li4')}
+            </ul>
         </div>
     );
 };
 
 const GlossaryContent = () => {
     const { t } = useLocalization();
-    const glossaryData = t('help.glossaryContent');
+    const glossary = t('help.glossaryContent');
 
     return (
-        <div className="space-y-4">
-            <p className="text-gray-400 mb-6">{glossaryData.intro}</p>
-            {glossaryData.sections.map((section: any) => (
+        <div className="prose prose-invert prose-sm max-w-none">
+            <p className="lead">{glossary.intro}</p>
+            {glossary.sections.map((section: any) => (
                 <div key={section.title}>
-                    <h3 className="text-xl font-bold text-gray-200 mt-6 mb-2">{section.title}</h3>
-                    {section.terms.map((term: any) => (
-                        <GlossaryTerm key={term.name} name={term.name}>{term.description}</GlossaryTerm>
-                    ))}
+                    <h3 className="mt-4">{section.title}</h3>
+                    <dl>
+                        {section.terms.map((term: any) => (
+                            <React.Fragment key={term.name}>
+                                <dt className="font-bold text-accent">{term.name}</dt>
+                                <dd className="mb-3 pl-4 text-gray-400">{term.description}</dd>
+                            </React.Fragment>
+                        ))}
+                    </dl>
                 </div>
             ))}
         </div>
     );
 };
 
-
-export const HelpGuide = ({ isVisible, onClose }: { isVisible: boolean, onClose: () => void }) => {
+const AboutContent = () => {
     const { t } = useLocalization();
-    const [activeTab, setActiveTab] = useState<'tutorial' | 'glossary'>('tutorial');
-    const modalRef = useRef<HTMLDivElement>(null);
+    const about = t('help.aboutContent');
+    const aiStudioLink = "https://ai.studio/apps/drive/1e5Yc-ommOORZdnzXxOBpCWtjJw5dIypi";
+    const githubLink = "https://github.com/qnbs/Codex";
+
+    return (
+        <div className="prose prose-invert prose-sm max-w-none">
+            <p className="lead">{about.intro}</p>
+
+            <h3 className="mt-6">{about.aiStudio.title}</h3>
+            <p>{about.aiStudio.description}</p>
+            <a href={aiStudioLink} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+                {about.aiStudio.link} &rarr;
+            </a>
+
+            <h3 className="mt-6">{about.github.title}</h3>
+            <p>{about.github.description}</p>
+            <a href={githubLink} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+                {about.github.link} &rarr;
+            </a>
+        </div>
+    );
+};
+
+
+const HelpGuide: React.FC<HelpGuideProps> = ({ isVisible, onClose }) => {
+    const { t } = useLocalization();
+    const [activeTab, setActiveTab] = useState('tutorial');
+    const panelRef = useRef<HTMLDivElement>(null);
     const memoizedOnClose = useCallback(onClose, [onClose]);
 
     useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') memoizedOnClose();
+        };
         if (isVisible) {
-            const modalNode = modalRef.current;
-            if (!modalNode) return;
-
-            const focusableElements = Array.from(modalNode.querySelectorAll<HTMLElement>(
-                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-            ));
-            const firstElement = focusableElements[0];
-            const lastElement = focusableElements[focusableElements.length - 1];
-
-            const handleKeyDown = (e: KeyboardEvent) => {
-                if (e.key === 'Escape') {
-                    memoizedOnClose();
-                }
-                if (e.key === 'Tab') {
-                    if (e.shiftKey) {
-                        if (document.activeElement === firstElement) {
-                            lastElement?.focus();
-                            e.preventDefault();
-                        }
-                    } else {
-                        if (document.activeElement === lastElement) {
-                            firstElement?.focus();
-                            e.preventDefault();
-                        }
-                    }
-                }
-            };
-
-            firstElement?.focus();
-            window.addEventListener('keydown', handleKeyDown);
-            return () => window.removeEventListener('keydown', handleKeyDown);
+            document.addEventListener('keydown', handleKeyDown);
+            panelRef.current?.focus();
         }
+        return () => document.removeEventListener('keydown', handleKeyDown);
     }, [isVisible, memoizedOnClose]);
     
     return (
-        <div className={`fixed inset-0 bg-black flex items-center justify-center z-50 p-4 transition-all duration-300 ${isVisible ? 'bg-opacity-80' : 'bg-opacity-0 pointer-events-none'}`} role="dialog" aria-modal="true" aria-labelledby="help-guide-title">
-            <div ref={modalRef} tabIndex={-1} className={`bg-gray-800 border border-gray-700 rounded-lg shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col transition-all duration-300 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
+        <div 
+            className={`fixed top-0 right-0 h-full w-full max-w-md bg-gray-900/80 backdrop-blur-sm shadow-2xl z-40 transform transition-transform duration-300 ease-in-out ${isVisible ? 'translate-x-0' : 'translate-x-full'}`}
+            role="dialog" aria-modal="true" aria-labelledby="help-title" ref={panelRef} tabIndex={-1}
+        >
+            <div className="flex flex-col h-full border-l border-gray-700">
                 <div className="flex justify-between items-center p-4 border-b border-gray-700">
-                    <h2 id="help-guide-title" className="text-2xl font-bold text-white">{t('help.title')}</h2>
+                    <h2 id="help-title" className="text-xl font-bold text-white">{t('help.title')}</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-white" aria-label={t('help.close')}>
                         <CloseIcon className="w-6 h-6" />
                     </button>
                 </div>
-                <div className="flex border-b border-gray-700">
-                    <button 
-                        onClick={() => setActiveTab('tutorial')} 
-                        role="tab"
-                        aria-selected={activeTab === 'tutorial'}
-                        className={`px-4 py-3 text-sm font-medium ${activeTab === 'tutorial' ? 'text-accent border-b-2 border-accent' : 'text-gray-400 hover:bg-gray-700/50'}`}
-                    >
-                        {t('help.tab.tutorial')}
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('glossary')} 
-                        role="tab"
-                        aria-selected={activeTab === 'glossary'}
-                        className={`px-4 py-3 text-sm font-medium ${activeTab === 'glossary' ? 'text-accent border-b-2 border-accent' : 'text-gray-400 hover:bg-gray-700/50'}`}
-                    >
-                        {t('help.tab.glossary')}
-                    </button>
+
+                <div className="border-b border-gray-700">
+                    <nav className="flex space-x-1 p-2" aria-label="Tabs">
+                        <button
+                            onClick={() => setActiveTab('tutorial')}
+                            className={`px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'tutorial' ? 'bg-accent/20 text-accent' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
+                            aria-current={activeTab === 'tutorial' ? 'page' : undefined}
+                        >
+                            {t('help.tab.tutorial')}
+                        </button>
+                        <button
+                             onClick={() => setActiveTab('glossary')}
+                             className={`px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'glossary' ? 'bg-accent/20 text-accent' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
+                             aria-current={activeTab === 'glossary' ? 'page' : undefined}
+                        >
+                            {t('help.tab.glossary')}
+                        </button>
+                        <button
+                             onClick={() => setActiveTab('about')}
+                             className={`px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'about' ? 'bg-accent/20 text-accent' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
+                             aria-current={activeTab === 'about' ? 'page' : undefined}
+                        >
+                            {t('help.tab.about')}
+                        </button>
+                    </nav>
                 </div>
-                <div className="p-6 overflow-y-auto flex-grow" role="tabpanel">
-                    {activeTab === 'tutorial' ? <TutorialContent /> : <GlossaryContent />}
+                
+                <div className="p-6 overflow-y-auto flex-grow">
+                    {activeTab === 'tutorial' && <TutorialContent />}
+                    {activeTab === 'glossary' && <GlossaryContent />}
+                    {activeTab === 'about' && <AboutContent />}
                 </div>
             </div>
         </div>
