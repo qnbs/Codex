@@ -32,6 +32,8 @@ Codex is packed with features that redefine knowledge discovery:
 
 -   **🎨 AI-Powered Visualizations:** Each article section can be enhanced with a unique, AI-generated image (`imagen-4.0-generate-001`). Customize the visual style (Photorealistic, Artistic, Vintage, etc.).
 
+-   **🎬 AI-Powered Video Generation:** Bring concepts to life by generating a short video clip (`veo-2.0-generate-001`) for any article section based on its image prompt.
+
 -   **✏️ AI-Powered Image Editing:** Edit any generated image directly within the article. Hover over an image, click the edit icon, and enter a text prompt (e.g., "Change the season to winter") to modify the image with `gemini-2.5-flash-image-preview`.
 
 -   **🔍 Interactive Text Tools:** Highlight any text in the article to instantly bring up a pop-up with three options:
@@ -70,6 +72,7 @@ Codex is packed with features that redefine knowledge discovery:
     -   **Text Generation:** `gemini-2.5-flash`
     -   **Image Generation:** `imagen-4.0-generate-001`
     -   **Image Editing:** `gemini-2.5-flash-image-preview`
+    -   **Video Generation:** `veo-2.0-generate-001`
 -   **Storage:** Browser **IndexedDB** for robust, persistent storage of all user data.
 
 ---
@@ -134,6 +137,8 @@ Codex ist vollgepackt mit Funktionen, die das Entdecken von Wissen neu definiere
 
 - **🎨 KI-gestützte Visualisierungen:** Jeder Artikelabschnitt kann mit einem einzigartigen, KI-generierten Bild (`imagen-4.0-generate-001`) versehen werden. Passen Sie den visuellen Stil an (Fotorealistisch, Künstlerisch, Vintage etc.).
 
+- **🎬 KI-gestützte Videogenerierung:** Erwecken Sie Konzepte zum Leben, indem Sie einen kurzen Videoclip (`veo-2.0-generate-001`) für jeden Artikelabschnitt basierend auf dessen Bild-Prompt generieren.
+
 - **✏️ KI-gestützte Bildbearbeitung:** Bearbeiten Sie jedes generierte Bild direkt im Artikel. Fahren Sie mit der Maus über ein Bild, klicken Sie auf das Bearbeitungssymbol und geben Sie einen Text-Prompt ein (z. B. "Ändere die Jahreszeit auf Winter"), um das Bild mit `gemini-2.5-flash-image-preview` zu modifizieren.
 
 - **🔍 Interaktive Textwerkzeuge:** Markieren Sie einen beliebigen Text im Artikel, um sofort ein Pop-up mit drei Optionen zu erhalten:
@@ -172,6 +177,7 @@ Codex ist vollgepackt mit Funktionen, die das Entdecken von Wissen neu definiere
   - **Textgenerierung:** `gemini-2.5-flash`
   - **Bilderzeugung:** `imagen-4.0-generate-001`
   - **Bildbearbeitung:** `gemini-2.5-flash-image-preview`
+  - **Videogenerierung:** `veo-2.0-generate-001`
 - **Speicher:** Browser **IndexedDB** für robuste, persistente Speicherung aller Benutzerdaten.
 
 ---

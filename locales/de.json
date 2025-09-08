@@ -1,4 +1,5 @@
 
+
 {
     "common": {
         "close": "Schließen",
@@ -137,7 +138,8 @@
         "imageLibrary": {
             "title": "Bilder-Bibliothek",
             "sourceArticle": "Quellartikel",
-            "confirmDelete": "Sind Sie sicher, dass Sie dieses Bild endgültig löschen möchten?"
+            "confirmDelete": "Sind Sie sicher, dass Sie dieses Bild endgültig löschen möchten?",
+            "editedPrompt": "(Bearbeitet) {{editPrompt}} -- Original: {{originalPrompt}}"
         },
         "settings": {
             "title": "Einstellungen"

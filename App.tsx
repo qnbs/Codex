@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect, useRef, useContext, useMemo } from 'react';
 import SearchBar from './components/SearchBar';
 import ArticleView from './components/ArticleView';
@@ -658,6 +659,21 @@ function CodexApp({ initialUserData }: { initialUserData: InitialUserData }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    // This effect runs when 'article' changes. The cleanup function
+    // will be executed on the *previous* state of 'article' before the
+    // new state is set, or when the component unmounts.
+    return () => {
+        if (article) { // Check if there was a previous article
+            article.sections.forEach(section => {
+                if (section.videoUrl && section.videoUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(section.videoUrl);
+                }
+            });
+        }
+    };
+  }, [article]); // Dependency array ensures this runs only when 'article' state changes
+
   const handleSearch = useCallback(async (topic: string, isRetry = false) => {
     if (isLoading) return;
 
@@ -755,10 +771,13 @@ function CodexApp({ initialUserData }: { initialUserData: InitialUserData }) {
         try {
             const originalImageUrl = article.sections[sectionIndex].imageUrl!;
             const newImageUrl = await editImage(originalImageUrl, editPrompt, locale);
-
+            
             addImageToLibrary({
                 imageUrl: newImageUrl,
-                prompt: `(Edit) ${editPrompt} -- Original: ${article.sections[sectionIndex].imagePrompt}`,
+                prompt: t('panels.imageLibrary.editedPrompt', {
+                    editPrompt: editPrompt,
+                    originalPrompt: article.sections[sectionIndex].imagePrompt
+                }),
                 topic: article.title,
             });
             

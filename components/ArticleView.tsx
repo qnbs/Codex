@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect, useMemo, useContext, useCallback } from 'react';
 import { ArticleData, StarterTopic, AppSettings, TextSize, SummaryType, TimelineEvent } from '../types';
 import { BookOpenIcon, SparklesIcon, TextSelectIcon, WandIcon, ImageIcon, CloseIcon, ClockIcon, ReloadIcon, ClipboardCopyIcon, TimelineIcon, SummarizeIcon, KeyPointsIcon, Eli5Icon, AnalogyIcon, PathIcon, PlusIcon, BookmarkIcon, VideoCameraIcon } from './IconComponents';
@@ -587,8 +588,12 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, isLoading, error, on
                 ))}
             </div>
 
-            <h2>{article.conclusion ? t('article.conclusion') : ""}</h2>
-            <p>{article.conclusion}</p>
+            {article.conclusion && (
+                <>
+                    <h2>{t('article.conclusion')}</h2>
+                    <p>{article.conclusion}</p>
+                </>
+            )}
             
              <TimelineDisplay timeline={article.timeline} onEventClick={onTopicClick} />
             

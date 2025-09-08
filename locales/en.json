@@ -1,4 +1,5 @@
 
+
 {
     "common": {
         "close": "Close",
@@ -137,7 +138,8 @@
         "imageLibrary": {
             "title": "Image Library",
             "sourceArticle": "Source Article",
-            "confirmDelete": "Are you sure you want to permanently delete this image?"
+            "confirmDelete": "Are you sure you want to permanently delete this image?",
+            "editedPrompt": "(Edit) {{editPrompt}} -- Original: {{originalPrompt}}"
         },
         "settings": {
             "title": "Settings"
