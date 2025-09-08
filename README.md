@@ -1,4 +1,112 @@
-# Codex: Ihr KI-gestützter Wissenspartner
+# Codex: Your AI-Powered Knowledge Partner
+
+[English](#english) | [Deutsch](#deutsch)
+
+---
+<a name="english"></a>
+## English
+
+[![Open in AI Studio](https://img.shields.io/badge/Live%20Demo-Open%20in%20AI%20Studio-blue?style=for-the-badge&logo=google&logoColor=white)](https://ai.studio/apps/drive/1e5Yc-ommOORZdnzXxOBpCWtjJw5dIypi)
+
+**Codex** is not just an information tool; it's an active, AI-powered knowledge partner that not only informs but also inspires, reveals connections, and turns learning into an immersive experience. It's built on three core pillars: **Personalization**, **Visualization**, and **Interconnection**.
+
+---
+
+### 🚀 Live Demo on Google AI Studio
+
+Experience Codex live now, without any installation, directly in your browser. This version is hosted on Google AI Studio, a platform that allows developers to create and share AI-powered applications.
+
+**[Open the Codex App in AI Studio](https://ai.studio/apps/drive/1e5Yc-ommOORZdnzXxOBpCWtjJw5dIypi)**
+
+#### What is Google AI Studio?
+
+[Google AI Studio](https://ai.google.dev/aistudio) is a web-based development environment for prototyping and building applications with the Google Gemini API. It provides an easy way to test generative models and integrate their code into your projects. The "Apps" feature in AI Studio enables developers like us to host fully functional web applications like Codex and make them accessible to a wide audience. By providing Codex here, we ensure you can always use the latest version with a seamless and powerful infrastructure.
+
+---
+
+### ✨ Core Features
+
+Codex is packed with features that redefine knowledge discovery:
+
+-   **✍️ Dynamic Article Generation:** Enter any topic and receive a comprehensive, encyclopedic article generated in real-time by the `gemini-2.5-flash` AI. The length is customizable (Concise, Standard, In-depth).
+
+-   **🎨 AI-Powered Visualizations:** Each article section can be enhanced with a unique, AI-generated image (`imagen-4.0-generate-001`). Customize the visual style (Photorealistic, Artistic, Vintage, etc.).
+
+-   **✏️ AI-Powered Image Editing:** Edit any generated image directly within the article. Hover over an image, click the edit icon, and enter a text prompt (e.g., "Change the season to winter") to modify the image with `gemini-2.5-flash-image-preview`.
+
+-   **🔍 Interactive Text Tools:** Highlight any text in the article to instantly bring up a pop-up with three options:
+    -   **Define:** Get a short, dictionary-style definition.
+    -   **Explain:** Have the concept explained in simple, understandable terms.
+    -   **Visualize:** Generate an AI image representing the highlighted term.
+
+-   **💡 Athena AI Copilot:** A context-aware chat assistant that has read the entire article. Ask follow-up questions, request clarification, or deepen your understanding through dialogue. Athena also suggests intelligent follow-up questions.
+
+-   **🕸️ Synapse Graph:** An interactive visualization at the end of each article that connects your current topic with related concepts. Each node is a stepping stone to a new article, encouraging organic exploration.
+
+-   **🚀 Cosmic Leap (Serendipity):** Feeling adventurous? The "Cosmic Leap" feature suggests a surprising but loosely related topic to guide you down unexpected and fascinating paths of knowledge.
+
+-   **📊 Quick Summaries:** Get the essence of an article with a single click. Choose between:
+    -   **TL;DR:** An ultra-short summary.
+    -   **ELI5:** An explanation in the simplest terms.
+    -   **Key Points:** The most important points as a list.
+    -   **Analogy:** A simple metaphor to understand the main concept.
+
+-   **📚 Comprehensive Data Management:** Your knowledge belongs to you. Organize your discoveries with:
+    -   **History:** Access your recently visited topics.
+    -   **Bookmarks:** Save important articles.
+    -   **Learning Paths:** Curate collections of articles to study a topic from multiple perspectives.
+    -   **Session Snapshots:** Save a complete state (article, chat, graph) to restore it exactly later.
+
+-   **⚙️ Full Personalization:** Customize Codex to your preferences. Change the accent color, font, text size, and AI behavior in the settings.
+
+-   **📥 Data Portability:** Export and import all your user data (settings, history, bookmarks, etc.) as a single JSON file.
+
+---
+
+### 🛠️ Technology Stack
+
+-   **Frontend:** React, TypeScript, Tailwind CSS
+-   **AI Models:** Google Gemini API
+    -   **Text Generation:** `gemini-2.5-flash`
+    -   **Image Generation:** `imagen-4.0-generate-001`
+    -   **Image Editing:** `gemini-2.5-flash-image-preview`
+-   **Storage:** Browser LocalStorage for persistent storage of all user data.
+
+---
+
+### 🚀 Getting Started (Developers)
+
+To run Codex locally and contribute, you will need a Google Gemini API key.
+
+1.  **Clone the repository:**
+    ```bash
+    git clone <repository-url>
+    cd codex-app
+    ```
+
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+
+3.  **Configure your API key:**
+    The application expects the API key in an environment variable. Create a `.env` file in the project's root directory and add your key:
+    ```
+    # .env
+    API_KEY="YOUR_GOOGLE_GEMINI_API_KEY"
+    ```
+    *Note: As this is a purely client-side application, the API key will be available in the browser. For production applications, implement appropriate security measures (e.g., a backend proxy).*
+
+4.  **Start the development server:**
+    ```bash
+    npm run dev
+    ```
+
+    Open `http://localhost:5173` (or the port shown in your terminal) in your browser.
+
+---
+<a name="deutsch"></a>
+## Deutsch
 
 [![Open in AI Studio](https://img.shields.io/badge/Live%20Demo-Open%20in%20AI%20Studio-blue?style=for-the-badge&logo=google&logoColor=white)](https://ai.studio/apps/drive/1e5Yc-ommOORZdnzXxOBpCWtjJw5dIypi)
 
@@ -6,19 +114,19 @@
 
 ---
 
-## 🚀 Live-Demo auf Google AI Studio
+### 🚀 Live-Demo auf Google AI Studio
 
 Erleben Sie Codex jetzt live und ohne Installation direkt in Ihrem Browser. Diese Version wird auf Google AI Studio gehostet, einer Plattform, die es Entwicklern ermöglicht, KI-gestützte Anwendungen zu erstellen und zu teilen.
 
 **[Öffnen Sie die Codex-App in AI Studio](https://ai.studio/apps/drive/1e5Yc-ommOORZdnzXxOBpCWtjJw5dIypi)**
 
-### Was ist Google AI Studio?
+#### Was ist Google AI Studio?
 
 [Google AI Studio](https://ai.google.dev/aistudio) ist eine webbasierte Entwicklungsumgebung zum Prototyping und Erstellen von Anwendungen mit dem Google Gemini API. Es bietet eine einfache Möglichkeit, generative Modelle zu testen und deren Code in Ihre Projekte zu integrieren. Die "Apps"-Funktion in AI Studio ermöglicht es Entwicklern wie uns, voll funktionsfähige Webanwendungen wie Codex zu hosten und für ein breites Publikum zugänglich zu machen. Indem wir Codex hier bereitstellen, stellen wir sicher, dass Sie immer die neueste Version mit einer nahtlosen und leistungsstarken Infrastruktur nutzen können.
 
 ---
 
-## ✨ Kernfunktionen
+### ✨ Kernfunktionen
 
 Codex ist vollgepackt mit Funktionen, die das Entdecken von Wissen neu definieren:
 
@@ -57,7 +165,7 @@ Codex ist vollgepackt mit Funktionen, die das Entdecken von Wissen neu definiere
 
 ---
 
-## 🛠️ Technologie-Stack
+### 🛠️ Technologie-Stack
 
 - **Frontend:** React, TypeScript, Tailwind CSS
 - **KI-Modelle:** Google Gemini API
@@ -68,7 +176,7 @@ Codex ist vollgepackt mit Funktionen, die das Entdecken von Wissen neu definiere
 
 ---
 
-## 🚀 Erste Schritte (Entwickler)
+### 🚀 Erste Schritte (Entwickler)
 
 Um Codex lokal auszuführen und weiterzuentwickeln, benötigen Sie einen Google Gemini API-Schlüssel.
 
