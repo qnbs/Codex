@@ -7,69 +7,37 @@ interface HelpGuideProps {
     onClose: () => void;
 }
 
+const TutorialStep = ({ title, children }: { title: string, children: React.ReactNode }) => (
+    <div className="p-4 bg-gray-800/50 rounded-lg not-prose">
+        <h4 className="font-bold text-md text-gray-100">{title}</h4>
+        <div className="text-gray-400 text-sm mt-2 space-y-2">{children}</div>
+    </div>
+);
+
 const TutorialContent = () => {
     const { t } = useLocalization();
     const tutorial = t('help.tutorialContent');
 
-    const renderListItem = (item: { label: string; text: string; p2?: string; }, key: string) => (
-        <li key={key} className="mb-2">
-            <p><strong>{item.label}</strong> {item.text}</p>
-            {item.p2 && <p className="mt-1 pl-4">{item.p2}</p>}
-        </li>
-    );
-
     return (
-        <div className="prose prose-invert prose-sm max-w-none">
-            <p className="lead">{tutorial.intro}</p>
+        <div className="space-y-4">
+            <p className="text-gray-300 text-sm">{tutorial.intro}</p>
             
-            {/* Section 1 */}
-            <h3>{tutorial.section1.title}</h3>
-            <p>{tutorial.section1.p1}</p>
-            <ul>
-                {renderListItem(tutorial.section1.li1, 's1li1')}
-                {renderListItem(tutorial.section1.li2, 's1li2')}
-                {renderListItem(tutorial.section1.li3, 's1li3')}
-            </ul>
-            
-            {/* Section 2 */}
-            <h3>{tutorial.section2.title}</h3>
-            <p>{tutorial.section2.p1}</p>
-            <ul>
-                <li key="s2li1" className="mb-2"><p><strong>{tutorial.section2.li1.label}</strong> {tutorial.section2.li1.text} <strong>Define</strong>, <strong>Explain</strong>, {t('help.tutorialContent.and')} <strong>Visualize</strong>. {tutorial.section2.li1.p2}</p></li>
-                {renderListItem(tutorial.section2.li2, 's2li2')}
-                {renderListItem(tutorial.section2.li3, 's2li3')}
-                {renderListItem(tutorial.section2.li4, 's2li4')}
-            </ul>
-
-            {/* Section 3 */}
-            <h3>{tutorial.section3.title}</h3>
-            <p>{tutorial.section3.p1}</p>
-            <ul>
-                {renderListItem(tutorial.section3.li1, 's3li1')}
-                {renderListItem(tutorial.section3.li2, 's3li2')}
-            </ul>
-
-            {/* Section 4 */}
-            <h3>{tutorial.section4.title}</h3>
-            <p>{tutorial.section4.p1}</p>
-            <ul>
-                {renderListItem(tutorial.section4.li1, 's4li1')}
-                {renderListItem(tutorial.section4.li2, 's4li2')}
-                {renderListItem(tutorial.section4.li3, 's4li3')}
-            </ul>
-
-            {/* Section 5 */}
-            <h3>{tutorial.section5.title}</h3>
-            <p>{tutorial.section5.p1}</p>
-            <ul>
-                {renderListItem(tutorial.section5.li1, 's5li1')}
-                {renderListItem(tutorial.section5.li2, 's5li2')}
-                {renderListItem(tutorial.section5.li3, 's5li3')}
-                {renderListItem(tutorial.section5.li4, 's5li4')}
-            </ul>
+            {tutorial.sections.map((section: any, index: number) => (
+                <TutorialStep key={index} title={section.title}>
+                    <p>{section.p1}</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                        {section.list.map((item: any, itemIndex: number) => (
+                             <li key={itemIndex}>
+                                <strong>{item.label}:</strong> {item.text1} {item.highlight && <span className="font-semibold text-gray-200">{item.highlight}</span>} {item.text2}
+                            </li>
+                        ))}
+                    </ul>
+                </TutorialStep>
+            ))}
         </div>
     );
 };
+
 
 const GlossaryContent = () => {
     const { t } = useLocalization();
@@ -91,31 +59,6 @@ const GlossaryContent = () => {
                     </dl>
                 </div>
             ))}
-        </div>
-    );
-};
-
-const AboutContent = () => {
-    const { t } = useLocalization();
-    const about = t('help.aboutContent');
-    const aiStudioLink = "https://ai.studio/apps/drive/1e5Yc-ommOORZdnzXxOBpCWtjJw5dIypi";
-    const githubLink = "https://github.com/qnbs/Codex";
-
-    return (
-        <div className="prose prose-invert prose-sm max-w-none">
-            <p className="lead">{about.intro}</p>
-
-            <h3 className="mt-6">{about.aiStudio.title}</h3>
-            <p>{about.aiStudio.description}</p>
-            <a href={aiStudioLink} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
-                {about.aiStudio.link} &rarr;
-            </a>
-
-            <h3 className="mt-6">{about.github.title}</h3>
-            <p>{about.github.description}</p>
-            <a href={githubLink} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
-                {about.github.link} &rarr;
-            </a>
         </div>
     );
 };
@@ -167,20 +110,11 @@ const HelpGuide: React.FC<HelpGuideProps> = ({ isVisible, onClose }) => {
                         >
                             {t('help.tab.glossary')}
                         </button>
-                        <button
-                             onClick={() => setActiveTab('about')}
-                             className={`px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'about' ? 'bg-accent/20 text-accent' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
-                             aria-current={activeTab === 'about' ? 'page' : undefined}
-                        >
-                            {t('help.tab.about')}
-                        </button>
                     </nav>
                 </div>
                 
                 <div className="p-6 overflow-y-auto flex-grow">
-                    {activeTab === 'tutorial' && <TutorialContent />}
-                    {activeTab === 'glossary' && <GlossaryContent />}
-                    {activeTab === 'about' && <AboutContent />}
+                    {activeTab === 'tutorial' ? <TutorialContent /> : <GlossaryContent />}
                 </div>
             </div>
         </div>

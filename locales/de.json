@@ -12,7 +12,7 @@
     },
     "searchbar": {
         "cosmicLeap": {
-            "title": "Kosmischer Sprung: Finde eine überraschende Verbindung"
+            "title": "Kosmischer Sprung: Eine überraschende Verbindung finden"
         }
     },
     "welcome": {
@@ -21,9 +21,9 @@
     },
     "starterTopics": [
         { "title": "Die Physik der Schwarzen Löcher", "description": "Reisen Sie an den Rand der Raumzeit und erforschen Sie diese kosmischen Mysterien." },
-        { "title": "Der große Emu-Krieg", "description": "Entdecken Sie die bizarre wahre Geschichte von Australiens Militäroperation gegen Vögel." },
-        { "title": "Geschichte des Impressionismus", "description": "Wie eine revolutionäre Kunstbewegung die Art und Weise, wie wir die Welt sehen, veränderte." },
-        { "title": "Mykologie und Pilznetzwerke", "description": "Entdecken Sie die Geheimnisse des 'Wood Wide Web', das die Wälder verbindet." }
+        { "title": "Der große Emu-Krieg", "description": "Entdecken Sie die bizarre, wahre Geschichte von Australiens Militäroperation gegen Vögel." },
+        { "title": "Geschichte des Impressionismus", "description": "Wie eine revolutionäre Kunstbewegung die Art und Weise, wie wir die Welt sehen, verändert hat." },
+        { "title": "Mykologie und Pilz-Netzwerke", "description": "Entdecken Sie die Geheimnisse des 'Wood Wide Web', das die Wälder verbindet." }
     ],
     "article": {
         "creating": "Erstelle Artikel...",
@@ -45,8 +45,8 @@
         "addToPath": {
             "title": "Zum Lernpfad hinzufügen",
             "heading": "Zu Pfad hinzufügen",
-            "noPaths": "Noch keine Artikel.",
-            "create": "+ Neu erstellen",
+            "noPaths": "Noch keine Pfade.",
+            "create": "+ Neuen Pfad erstellen",
             "newPathPlaceholder": "Name des neuen Pfades..."
         }
     },
@@ -59,7 +59,7 @@
     },
     "synapse": {
         "title": "Synapsen-Graph",
-        "description": "Entdecken Sie, wie alles miteinander verbunden ist. Erforschen Sie verwandte Themen oder wagen Sie einen Sprung ins Unerwartete.",
+        "description": "Entdecken Sie, wie alles zusammenhängt. Erforschen Sie verwandte Themen oder wagen Sie einen Sprung ins Unerwartete.",
         "cosmicLeap": "Kosmischer Sprung",
         "relevance": "Relevanz:",
         "summary": "Zusammenfassung:"
@@ -69,15 +69,15 @@
         "welcomeMessage": "Hallo! Ich bin Athena, Ihre KI-Assistentin. Ich habe den Artikel über \"{{title}}\" gelesen. Wie kann ich Ihnen helfen, ihn besser zu verstehen?",
         "thinking": "Denke nach...",
         "error": "Es tut mir leid, ich habe im Moment Schwierigkeiten zu antworten. Bitte versuchen Sie es gleich noch einmal.",
-        "placeholder": "Stellen Sie eine Folgefrage... (Strg+Enter)",
-        "placeholderLoading": "Warte, bis der Artikel geladen ist...",
-        "loadingArticle": "Bereite mich auf deine Fragen zu {{topic}} vor...",
+        "placeholder": "Eine Folgefrage stellen... (Strg+Enter)",
+        "placeholderLoading": "Warte auf Artikel...",
+        "loadingArticle": "Lese mich in '{{topic}}' ein...",
         "fallbackQuestions": [
             "Fasse dies in 3 Stichpunkten zusammen",
             "Was sind die Schlüsselkonzepte?",
             "Erkläre das Fazit"
         ],
-        "systemInstruction": "Du bist Athena, eine hilfreiche und aufschlussreiche KI-Wissensassistentin. Dein Ziel ist es, dem Benutzer zu helfen, den bereitgestellten Artikel zu verstehen. Dir wurde der vollständige Text eines Artikels mit folgendem Inhalt gegeben, und alle Benutzerfragen sollten in Bezug auf diesen beantwortet werden. Beziehe dich in deinen Antworten nicht auf diese Präambel. Antworte immer auf Deutsch. Artikelinhalt: \"\"\"{{articleContext}}\"\"\""
+        "systemInstruction": "Sie sind Athena, eine hilfreiche und aufschlussreiche KI-Wissensassistentin. Ihr Ziel ist es, dem Benutzer zu helfen, den bereitgestellten Artikel zu verstehen. Ihnen wurde der vollständige Text eines Artikels mit folgendem Inhalt gegeben, und alle Benutzerfragen sollten in Bezug darauf beantwortet werden. Beziehen Sie sich in Ihren Antworten nicht auf diese Präambel. Sprechen Sie immer auf Deutsch. Artikelinhalt: \"\"\"{{articleContext}}\"\"\""
     },
     "interaction": {
         "toolbarLabel": "Text-Interaktionswerkzeuge",
@@ -100,10 +100,22 @@
             "title": "Lesezeichen"
         },
         "learningPaths": {
-            "title": "Lernpfade"
+            "title": "Lernpfade",
+            "progress": "{{completed}}/{{total}} abgeschlossen",
+            "goToArticle": "Zum Artikel",
+            "removeFromPath": "Aus Pfad entfernen",
+            "deletePath": "Pfad löschen",
+            "noArticles": "Noch keine Artikel in diesem Pfad.",
+            "noPathsTitle": "Keine Lernpfade erstellt",
+            "noPathsDescription": "Sie können einen neuen Pfad erstellen, indem Sie in der Artikelansicht einen Artikel hinzufügen."
         },
         "snapshots": {
             "title": "Schnappschüsse"
+        },
+        "imageLibrary": {
+            "title": "Bilder-Bibliothek",
+            "sourceArticle": "Quellartikel",
+            "confirmDelete": "Sind Sie sicher, dass Sie dieses Bild endgültig löschen möchten?"
         },
         "settings": {
             "title": "Einstellungen"
@@ -111,7 +123,7 @@
         "help": {
             "title": "Hilfe"
         },
-        "noEntries": "Noch keine Einträge.",
+        "noEntries": "Keine Einträge.",
         "deleteEntry": "Eintrag löschen",
         "clearAll": "Alle {{title}} löschen"
     },
@@ -131,7 +143,6 @@
             "viewBookmarks": "Lesezeichen anzeigen",
             "viewPaths": "Lernpfade anzeigen",
             "viewSnapshots": "Schnappschüsse anzeigen",
-            "viewImages": "Bilder-Bibliothek anzeigen",
             "openSettings": "Einstellungen öffnen",
             "viewHelp": "Hilfe anzeigen",
             "cosmicLeap": "Kosmischer Sprung",
@@ -149,49 +160,47 @@
             "accentColor": {
                 "label": "Akzentfarbe",
                 "description": "Wählen Sie die Hauptfarbe für UI-Elemente.",
-                "options": {
-                    "amber": "Bernstein", "sky": "Himmelblau", "rose": "Rose", "emerald": "Smaragd"
-                }
+                "amber": "Bernstein",
+                "sky": "Himmelblau",
+                "rose": "Rose",
+                "emerald": "Smaragd"
             },
             "font": {
                 "label": "Schriftfamilie",
                 "description": "Wählen Sie die Schriftart für die App.",
-                "options": {
-                    "artistic": "Künstlerisch (Lora/Inter)", "modern": "Modern (Roboto)"
-                }
+                "artistic": "Künstlerisch",
+                "modern": "Modern"
             },
             "textSize": {
                 "label": "Textgröße",
                 "description": "Passen Sie die Textgröße in Artikeln an.",
-                "options": {
-                    "sm": "Klein", "base": "Standard", "lg": "Groß"
-                }
+                "sm": "Klein",
+                "base": "Standard",
+                "lg": "Groß"
             }
         },
         "content": {
             "title": "Inhalt & KI",
             "language": {
                 "label": "Sprache",
-                "description": "Stellen Sie die Anzeige- und Inhaltssprache ein.",
-                "options": {
-                    "de": "Deutsch", "en": "English"
-                }
+                "description": "Legen Sie die Anzeige- und Inhaltssprache fest.",
+                "de": "Deutsch",
+                "en": "English"
             },
             "articleLength": {
                 "label": "Artikellänge",
                 "description": "Legen Sie die bevorzugte Länge für generierte Artikel fest.",
-                "options": {
-                    "concise": "Kompakt (ca. 300 Wörter)",
-                    "standard": "Standard (ca. 600 Wörter)",
-                    "in-depth": "Ausführlich (900+ Wörter)"
-                }
+                "concise": "Kompakt (ca. 300 Wörter)",
+                "standard": "Standard (ca. 600 Wörter)",
+                "in-depth": "Ausführlich (900+ Wörter)"
             },
             "imageStyle": {
                 "label": "Bildstil",
                 "description": "Definieren Sie den künstlerischen Stil für KI-generierte Bilder.",
-                "options": {
-                    "photorealistic": "Fotorealistisch", "artistic": "Künstlerisch", "vintage": "Vintage", "minimalist": "Minimalistisch"
-                }
+                "photorealistic": "Fotorealistisch",
+                "artistic": "Künstlerisch",
+                "vintage": "Vintage",
+                "minimalist": "Minimalistisch"
             },
             "autoLoad": {
                 "label": "Bilder automatisch laden",
@@ -208,40 +217,126 @@
             "clearBookmarks": "Lesezeichen löschen",
             "clearPaths": "Lernpfade löschen",
             "clearSnapshots": "Schnappschüsse löschen",
-            "clearImages": "Bilder-Bibliothek löschen",
             "export": "Alle Daten exportieren",
             "import": "Daten importieren"
         }
     },
-    "help": { "title": "Codex Hilfe & Anleitung", "close": "Hilfefenster schließen", "tab": { "tutorial": "Schritt-für-Schritt-Anleitung", "glossary": "Wissensdatenbank & Glossar", "about": "Über Codex" }, "tutorialContent": { "intro": "Willkommen bei Codex! Diese Anleitung führt Sie durch die Kernfunktionen, damit Sie das Beste aus Ihrer Wissenserkundung herausholen können.", "and": "und", "section1": { "title": "Ihre Reise beginnen", "p1": "Es gibt mehrere Möglichkeiten, mit der Erkundung zu beginnen:", "li1": { "label": "Direkte Suche", "text": "Geben Sie ein beliebiges Thema, das Sie interessiert, in die Hauptsuchleiste ein." }, "li2": { "label": "Starter-Themen", "text": "Wählen Sie eines der kuratierten Themen auf dem Startbildschirm für sofortige Inspiration." }, "li3": { "label": "Kosmischer Sprung", "text": "Klicken Sie auf den Button 'Kosmischer Sprung', um zu einem zufälligen, überraschenden Thema zu gelangen." } }, "section2": { "title": "Mit einem Artikel interagieren", "p1": "Sobald ein Artikel generiert wurde, stehen Ihnen mehrere Werkzeuge zur Verfügung:", "li1": { "label": "Text-Interaktion", "text": "Markieren Sie ein Wort oder einen Satz, um ein Schnellmenü aufzurufen. Sie können", "p2": "Die KI liefert eine prägnante Antwort in einem Pop-up-Fenster." }, "li2": { "label": "Bilderzeugung", "text": "Jeder Abschnitt hat einen Prompt für ein beschreibendes Bild. Klicken Sie auf 'Bild generieren', um eine visuelle Darstellung von der KI erstellen zu lassen." }, "li3": { "label": "Schnellzusammenfassungen", "text": "Verwenden Sie die Zusammenfassungs-Buttons (Zfsg., EWI5 usw.) unter der Einleitung, um unterschiedliche Perspektiven auf den Inhalt zu erhalten." }, "li4": { "label": "Zeitleiste", "text": "Bei historischen Themen bietet eine Zeitleiste mit Schlüsselereignissen einen chronologischen Überblick. Sie können auf Ereignisse klicken, um mehr zu erfahren." } }, "section3": { "title": "Mit Athena sprechen", "p1": "Das Panel auf der rechten Seite ist Ihr KI-Copilot, Athena. Sie hat den vollen Kontext des Artikels, den Sie gerade lesen.", "li1": { "label": "Fragen Sie alles:", "text": "Bitten Sie um Klärung, tiefere Einblicke oder wie Konzepte zusammenhängen." }, "li2": { "label": "Vorgeschlagene Fragen:", "text": "Nutzen Sie die Vorschlags-Chips, um durchdachte Fragen zu stellen, die von der KI kuratiert wurden." } }, "section4": { "title": "Wissen vernetzen", "p1": "Codex wurde entwickelt, um Ihnen zu helfen, Verbindungen zwischen Themen zu entdecken.", "li1": { "label": "Synapsen-Graph:", "text": "Am Ende jedes Artikels zeigt Ihnen dieser Graph verwandte Themen. Klicken Sie auf einen Knoten, um einen neuen Artikel zu generieren und Ihre Reise fortzusetzen." }, "li2": { "label": "Links im Artikel:", "text": "Ein Klick auf Ereignisse in der Zeitleiste startet ebenfalls eine Suche nach diesem neuen Thema." }, "li3": { "label": "Kosmischer Sprung:", "text": "Nutzen Sie diese Funktion aus dem Synapsen-Graph, um zu einem entfernt verwandten, aber interessanten neuen Thema zu springen." } }, "section5": { "title": "Ihre Daten verwalten", "p1": "Codex speichert alle Ihre Daten in Ihrem Browser. Greifen Sie über die Symbole in der oberen rechten Kopfzeile darauf zu und verwalten Sie sie:", "li1": { "label": "Verlauf:", "text": "Besuchen Sie erneut Themen, die Sie kürzlich erkundet haben." }, "li2": { "label": "Lesezeichen:", "text": "Speichern Sie Ihre bevorzugten oder wichtigsten Artikel für einen einfachen Zugriff." }, "li3": { "label": "Lernpfade:", "text": "Gruppieren Sie verwandte Artikel, um einen benutzerdefinierten Lehrplan zu einem Thema zu erstellen." }, "li4": { "label": "Schnappschüsse:", "text": "Speichern Sie eine ganze Sitzung – einschließlich Artikel, Chatverlauf und verwandter Themen – um sie später wiederherzustellen." } } }, "glossaryContent": { "intro": "Dieses Glossar erklärt die wichtigsten Begriffe und Konzepte innerhalb der Codex-Anwendung.", "sections": [ { "title": "Kernkonzepte", "terms": [ { "name": "Athena KI-Copilot", "description": "Der kontextbezogene Chat-Assistent, der für jeden Artikel verfügbar ist. Er hilft Ihnen, tiefer in das Thema einzutauchen, indem er Fragen beantwortet." }, { "name": "Synapsen-Graph", "description": "Eine interaktive, knotenbasierte Visualisierung, die Themen im Zusammenhang mit dem aktuellen Artikel anzeigt und zur Erkundung anregt." }, { "name": "Kosmischer Sprung", "description": "Eine Funktion, die ein zufälliges, entfernt verwandtes Thema vorschlägt, um Ihren Horizont auf unerwartete Weise zu erweitern." } ] }, { "title": "Datenverwaltung", "terms": [ { "name": "Lernpfad", "description": "Eine vom Benutzer kuratierte Sammlung von Artikeln. Sie können Pfade erstellen, um Themen für gezieltes Lernen zu gruppieren." }, { "name": "Sitzungs-Schnappschuss", "description": "Ein vollständiger Speicherzustand Ihrer aktuellen Sitzung, einschließlich des Hauptartikels, des Chatverlaufs mit Athena und der Themen des Synapsen-Graphen. Schnappschüsse können jederzeit wiederhergestellt werden." } ] } ] }, "aboutContent": { "intro": "Codex ist eine Proof-of-Concept-Anwendung, die entwickelt wurde, um die Leistungsfähigkeit von generativer KI für die Wissenserkundung und -entdeckung zu demonstrieren.", "aiStudio": { "title": "AI Studio Projekt", "description": "Diese Web-App wurde aus einem Google AI Studio-Projekt erstellt. Sie können den ursprünglichen Prompt finden und selbst damit experimentieren.", "link": "Projekt in AI Studio ansehen" }, "github": { "title": "Quellcode auf GitHub", "description": "Der vollständige Quellcode für Codex ist auf GitHub verfügbar. Fühlen Sie sich frei, ihn zu erkunden, zu forken und beizutragen.", "link": "Repository auf GitHub ansehen" } } },
+    "help": {
+        "title": "Codex Hilfe & Leitfaden",
+        "close": "Hilfefenster schließen",
+        "tab": {
+            "tutorial": "Schritt-für-Schritt-Anleitung",
+            "glossary": "Wissensdatenbank & Glossar"
+        },
+        "tutorialContent": {
+            "intro": "Willkommen bei Codex! Diese Anleitung führt Sie durch die Kernfunktionen, damit Sie das Beste aus Ihrer Wissenserkundung herausholen können.",
+            "sections": [
+                {
+                    "title": "Ihre Reise beginnen",
+                    "p1": "Es gibt mehrere Möglichkeiten, mit der Erkundung zu beginnen:",
+                    "list": [
+                        { "label": "Direkte Suche", "text1": "Geben Sie ein beliebiges Thema, das Sie neugierig macht, in die Hauptsuchleiste ein." },
+                        { "label": "Starter-Themen", "text1": "Wählen Sie eines der kuratierten Themen auf dem Begrüßungsbildschirm für sofortige Inspiration." },
+                        { "label": "Kosmischer Sprung", "text1": "Klicken Sie auf die Schaltfläche 'Kosmischer Sprung', um zu einem zufälligen, überraschenden Thema zu gelangen." }
+                    ]
+                },
+                {
+                    "title": "Mit einem Artikel interagieren",
+                    "p1": "Sobald ein Artikel generiert ist, stehen Ihnen mehrere Werkzeuge zur Verfügung:",
+                    "list": [
+                        { "label": "Text-Interaktion", "text1": "Markieren Sie ein beliebiges Wort oder einen Satz, um ein Schnellmenü aufzurufen. Sie können", "highlight": "Definieren, Erklären und Visualisieren.", "text2": "Die KI liefert eine prägnante Antwort in einem Pop-up-Fenster." },
+                        { "label": "Bilderzeugung", "text1": "Jeder Abschnitt hat einen Prompt für ein beschreibendes Bild. Klicken Sie auf 'Bild generieren', um die KI eine visuelle Darstellung erstellen zu lassen." },
+                        { "label": "Schnellzusammenfassungen", "text1": "Verwenden Sie die Zusammenfassungs-Schaltflächen (Zfsg., EWI5 usw.) unter der Einleitung, um unterschiedliche Perspektiven auf den Inhalt zu erhalten." },
+                        { "label": "Zeitleiste", "text1": "Bei historischen Themen bietet eine Zeitleiste mit Schlüsselereignissen einen chronologischen Überblick. Sie können auf Ereignisse klicken, um mehr zu erfahren." }
+                    ]
+                },
+                {
+                    "title": "Im Gespräch mit Athena",
+                    "p1": "Das Panel auf der rechten Seite ist Ihr KI-Copilot, Athena. Sie hat den vollen Kontext des Artikels, den Sie gerade lesen.",
+                    "list": [
+                        { "label": "Fragen Sie alles", "text1": "Bitten Sie um Klärung, tiefere Einblicke oder wie Konzepte miteinander in Beziehung stehen." },
+                        { "label": "Vorgeschlagene Fragen", "text1": "Nutzen Sie die Vorschlags-Chips, um durchdachte, von der KI kuratierte Fragen zu stellen." }
+                    ]
+                },
+                {
+                    "title": "Wissen vernetzen",
+                    "p1": "Codex wurde entwickelt, um Ihnen zu helfen, Verbindungen zwischen Themen zu entdecken.",
+                    "list": [
+                        { "label": "Synapsen-Graph", "text1": "Am Ende jedes Artikels zeigt Ihnen dieser Graph verwandte Themen. Klicken Sie auf einen Knoten, um einen neuen Artikel zu generieren und Ihre Reise fortzusetzen." },
+                        { "label": "In-Artikel-Links", "text1": "Ein Klick auf Ereignisse in der Zeitleiste startet ebenfalls eine Suche nach diesem neuen Thema." },
+                        { "label": "Kosmischer Sprung", "text1": "Nutzen Sie diese Funktion aus dem Synapsen-Graph, um zu einem entfernt verwandten, aber interessanten neuen Thema zu springen." }
+                    ]
+                },
+                {
+                    "title": "Ihre Daten verwalten",
+                    "p1": "Codex speichert alle Ihre Daten in Ihrem Browser. Greifen Sie über die Symbole in der oberen rechten Kopfzeile darauf zu und verwalten Sie sie:",
+                    "list": [
+                        { "label": "Verlauf", "text1": "Besuchen Sie erneut Themen, die Sie kürzlich erkundet haben." },
+                        { "label": "Lesezeichen", "text1": "Speichern Sie Ihre bevorzugten oder wichtigsten Artikel für einen einfachen Zugriff." },
+                        { "label": "Lernpfade", "text1": "Gruppieren Sie verwandte Artikel, um einen benutzerdefinierten Lehrplan zu einem Thema zu erstellen." },
+                        { "label": "Schnappschüsse", "text1": "Speichern Sie eine gesamte Sitzung – einschließlich Artikel, Chatverlauf und verwandter Themen –, um sie später wiederherzustellen." }
+                    ]
+                }
+            ]
+        },
+        "glossaryContent": {
+            "intro": "Dieses Glossar erklärt die wichtigsten Begriffe und Konzepte innerhalb der Codex-Anwendung.",
+            "sections": [
+                {
+                    "title": "Kernkonzepte",
+                    "terms": [
+                        { "name": "Athena KI-Copilot", "description": "Der kontextbezogene Chat-Assistent, der für jeden Artikel verfügbar ist. Er hilft Ihnen, tiefer in die Materie einzutauchen, indem er Fragen beantwortet." },
+                        { "name": "Synapsen-Graph", "description": "Eine interaktive, knotenbasierte Visualisierung, die Themen im Zusammenhang mit dem aktuellen Artikel anzeigt und zum Erkunden anregt." },
+                        { "name": "Kosmischer Sprung", "description": "Eine Funktion, die ein überraschendes, entfernt verwandtes Thema vorschlägt, um Ihren Horizont auf unerwartete Weise zu erweitern." }
+                    ]
+                },
+                {
+                    "title": "Datenverwaltung",
+                    "terms": [
+                        { "name": "Lernpfad", "description": "Eine vom Benutzer kuratierte Sammlung von Artikeln. Sie können Pfade erstellen, um Themen für fokussiertes Lernen zu gruppieren." },
+                        { "name": "Sitzungs-Schnappschuss", "description": "Ein vollständiger Speicherzustand Ihrer aktuellen Sitzung, einschließlich des Hauptartikels, des Chatverlaufs mit Athena und der Themen des Synapsen-Graphen. Schnappschüsse können jederzeit wiederhergestellt werden." }
+                    ]
+                }
+            ]
+        }
+    },
     "entry": {
         "title": "Willkommen bei Codex",
-        "subtitle": "Ihre persönliche Wissensmaschine. Entdecken, verstehen und vernetzen Sie Ideen wie nie zuvor.",
+        "subtitle": "Ihre persönliche Wissensmaschine. Entdecken, verstehen und verbinden Sie Ideen wie nie zuvor.",
         "getStarted": "Loslegen",
         "tutorial": {
             "title": "Kurzanleitung",
-            "step1": { "title": "1. Suchen & Entdecken", "description": "Starten Sie mit einem Thema in der Suchleiste, wählen Sie einen Vorschlag oder wagen Sie mit dem 'Kosmischen Sprung' einen Sprung ins Ungewisse." },
-            "step2": { "title": "2. Interagieren & Verstehen", "description": "Markieren Sie einen beliebigen Text für Definitionen, Erklärungen oder KI-Bilder. Nutzen Sie Zusammenfassungen, um komplexe Themen schnell zu erfassen." },
-            "step3": { "title": "3. KI-Copilot 'Athena'", "description": "Stellen Sie Athena im rechten Panel Fragen zum Artikel. Sie hat den Kontext und hilft Ihnen, tiefer zu graben." },
-            "step4": { "title": "4. Wissen vernetzen", "description": "Der 'Synapsen-Graph' am Ende jedes Artikels zeigt Ihnen verwandte Themen. Klicken Sie auf einen Knoten, um Ihre Reise fortzusetzen." }
+            "step1": {
+                "title": "1. Suchen & Entdecken",
+                "description": "Beginnen Sie mit einem Thema in der Suchleiste, wählen Sie einen Vorschlag oder wagen Sie einen Sprung ins Blaue mit 'Kosmischer Sprung'."
+            },
+            "step2": {
+                "title": "2. Interagieren & Verstehen",
+                "description": "Markieren Sie einen beliebigen Text für Definitionen, Erklärungen oder KI-Bilder. Nutzen Sie Zusammenfassungen, um komplexe Themen schnell zu erfassen."
+            },
+            "step3": {
+                "title": "3. KI-Copilot 'Athena'",
+                "description": "Stellen Sie Athena im rechten Panel Fragen zum Artikel. Sie hat den Kontext und hilft Ihnen, tiefer zu graben."
+            },
+            "step4": {
+                "title": "4. Wissen vernetzen",
+                "description": "Der 'Synapsen-Graph' am Ende jedes Artikels zeigt Ihnen verwandte Themen. Klicken Sie auf einen Knoten, um Ihre Reise fortzusetzen."
+            }
         },
-        "startExploring": "Erkundung starten"
+        "startExploring": "Exploration starten"
     },
     "prompts": {
         "snapshotName": "Geben Sie einen Namen für diesen Sitzungs-Schnappschuss ein:",
         "confirmClearAll": "Sind Sie sicher, dass Sie alle {{name}} löschen möchten? Dies kann nicht rückgängig gemacht werden.",
-        "confirmDeletePath": "Sind Sie sicher, dass Sie den Lernpfad \"{{pathName}}\" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
-        "confirmDeleteSnapshot": "Sind Sie sicher, dass Sie den Schnappschuss \"{{name}}\" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
-        "confirmDeleteImage": "Sind Sie sicher, dass Sie dieses Bild dauerhaft löschen möchten?",
-        "confirmClearLibrary": "Sind Sie sicher, dass Sie alle Bilder in Ihrer Bibliothek dauerhaft löschen möchten? Dies kann nicht rückgängig gemacht werden."
+        "confirmDeletePath": "Sind Sie sicher, dass Sie den Lernpfad \"{{pathName}}\" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden."
     },
     "notifications": {
         "bookmarkRemoved": "Lesezeichen für \"{{topic}}\" entfernt.",
         "bookmarkAdded": "\"{{topic}}\" zu Lesezeichen hinzugefügt.",
         "articleAddedToPath": "\"{{articleTitle}}\" zum Lernpfad \"{{pathName}}\" hinzugefügt.",
+        "articleAlreadyInPath": "\"{{articleTitle}}\" ist bereits im Pfad \"{{pathName}}\" enthalten.",
         "pathCreated": "Lernpfad \"{{pathName}}\" erstellt.",
         "snapshotSaved": "Schnappschuss \"{{name}}\" gespeichert!",
-        "snapshotDeleted": "Schnappschuss \"{{name}}\" gelöscht.",
         "articleRemovedFromPath": "\"{{articleTitle}}\" wurde aus dem Pfad \"{{pathName}}\" entfernt.",
         "pathDeleted": "Lernpfad \"{{pathName}}\" gelöscht.",
         "clearedAll": "Alle {{name}} gelöscht.",
@@ -251,36 +346,20 @@
         "imagesGeneratedSuccess": "{{count}} Bild(er) erfolgreich generiert.",
         "findingConnection": "Suche nach einer überraschenden Verbindung...",
         "cosmicLeapFound": "Kosmischer Sprung gefunden: {{topic}}",
-        "snapshotRestored": "Schnappschuss \"{{name}}\" wiederhergestellt.",
-        "promptCopied": "Bild-Prompt in die Zwischenablage kopiert!",
-        "imageDownloaded": "Bild-Download gestartet.",
-        "imageDeleted": "Bild aus der Bibliothek gelöscht.",
-        "libraryCleared": "Bilder-Bibliothek geleert."
+        "snapshotRestored": "Schnappschuss \"{{name}}\" wiederhergestellt."
     },
     "errors": {
         "unknown": "Ein unbekannter Fehler ist aufgetreten.",
         "articleCreationFailed": "Konnte keinen Artikel für \"{{topic}}\" erstellen.",
-        "imageGenerationFailed": "Bild konnte nicht generiert werden.",
-        "imageGenSectionFailed": "Bild für Abschnitt \"{{section}}\" konnte nicht generiert werden.",
+        "imageGenerationFailed": "Konnte kein Bild generieren.",
+        "imageGenSectionFailed": "Konnte kein Bild für \"{{section}}\" generieren.",
         "cosmicLeapFailed": "Konnte kein Thema für einen kosmischen Sprung finden.",
-        "fileRead": "Datei konnte nicht gelesen werden.",
-        "invalidBackup": "Ungültige Struktur der Sicherungsdatei.",
+        "fileRead": "Datei konnte nicht gelesen werden",
+        "invalidBackup": "Ungültige Backup-Dateistruktur.",
         "importFailed": "Import der Daten fehlgeschlagen.",
-        "exportFailed": "Export der Daten fehlgeschlagen.",
-        "fetchImagesFailed": "Abrufen der Bilder aus der Bibliothek fehlgeschlagen.",
-        "deleteImageFailed": "Löschen des Bildes fehlgeschlagen.",
-        "clearLibraryFailed": "Leeren der Bilder-Bibliothek fehlgeschlagen."
-    },
-    "imageLibrary": {
-        "title": "Bilder-Bibliothek",
-        "loading": "Lade Bilder...",
-        "clear": "Bibliothek leeren",
-        "download": "Bild herunterladen",
-        "copyPrompt": "Prompt kopieren",
-        "delete": "Bild löschen",
-        "empty": {
-            "title": "Ihre Bibliothek ist leer",
-            "description": "Bilder, die Sie in Artikeln generieren, werden hier angezeigt, damit Sie sie durchsuchen und wiederverwenden können."
-        }
+        "dbLoadFailed": "Bilder-Bibliothek konnte nicht aus der Datenbank geladen werden.",
+        "dbSaveFailed": "Bild konnte nicht in der Datenbank gespeichert werden.",
+        "dbDeleteFailed": "Bild konnte nicht aus der Datenbank gelöscht werden.",
+        "dbClearFailed": "Löschen der Bilder-Bibliothek ist fehlgeschlagen."
     }
 }

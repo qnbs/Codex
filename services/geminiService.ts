@@ -1,7 +1,5 @@
-
 // FIX: Add GenerateImagesResponse type for generateImages API call.
 import { GoogleGenAI, Type, GenerateContentResponse, Chat, GenerateImagesResponse } from "@google/genai";
-// FIX: Correct import path for types
 import { ArticleData, RelatedTopic, ChatMessage, StarterTopic, AppSettings, SummaryType, Locale } from '../types';
 import { Prompts } from './prompts';
 
@@ -137,10 +135,9 @@ const parseJsonResponse = <T,>(jsonText: string, context: string, locale: Locale
 export const generateArticleContent = async (topic: string, settings: AppSettings, locale: Locale): Promise<ArticleData> => {
   try {
     const prompt = Prompts.generateArticle(locale, topic, settings);
-    // FIX: Explicitly specify the generic type for callGeminiWithRetry to ensure 'response' is correctly typed.
     const response = await callGeminiWithRetry<GenerateContentResponse>(() => ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: prompt,
+      contents: { parts: [{ text: prompt }] },
       config: {
         responseMimeType: "application/json",
         responseSchema: articleSchema,
@@ -173,7 +170,6 @@ export const generateImageForSection = async (prompt: string, settings: AppSetti
     if (!prompt) return '';
     try {
         const fullPrompt = constructImagePrompt(prompt, settings, locale);
-        // FIX: Explicitly specify the generic type for callGeminiWithRetry to ensure 'response' is correctly typed.
         const response = await callGeminiWithRetry<GenerateImagesResponse>(() => ai.models.generateImages({
             model: 'imagen-4.0-generate-001',
             prompt: fullPrompt,
@@ -191,7 +187,7 @@ export const generateImageForSection = async (prompt: string, settings: AppSetti
     } catch(error) {
         console.error('Error generating image for prompt "', prompt, '":', error);
         const safetyMessage = locale === 'de' ? 'Die Anweisung hat einen Sicherheitsfilter ausgelöst.' : 'The prompt triggered a safety filter.';
-        const complexMessage = locale === 'de' ? 'Der Prompt könnte zu komplex oder eingeschränkt sein.' : 'The prompt may be too complex or restricted.';
+        const complexMessage = locale === 'de' ? 'Der Prompt könnte zu komplex oder eingeschränkt sein.' : 'The prompt may be too komplex oder eingeschränkt sein.';
         const errorMessage = error instanceof Error && error.message.includes('SAFETY') ? safetyMessage : complexMessage;
         const finalMessage = locale === 'de' ? `Bilderzeugung fehlgeschlagen. ${errorMessage}` : `Image generation failed. ${errorMessage}`;
         throw new Error(finalMessage);
@@ -201,10 +197,9 @@ export const generateImageForSection = async (prompt: string, settings: AppSetti
 export const getRelatedTopics = async (topic: string, settings: AppSettings, locale: Locale): Promise<RelatedTopic[]> => {
     try {
         const prompt = Prompts.getRelatedTopics(locale, topic, settings);
-        // FIX: Explicitly specify the generic type for callGeminiWithRetry to ensure 'response' is correctly typed.
         const response = await callGeminiWithRetry<GenerateContentResponse>(() => ai.models.generateContent({
             model: "gemini-2.5-flash",
-            contents: prompt,
+            contents: { parts: [{ text: prompt }] },
             config: {
                 responseMimeType: "application/json",
                 responseSchema: relatedTopicsSchema,
@@ -224,10 +219,9 @@ export const getRelatedTopics = async (topic: string, settings: AppSettings, loc
 export const getSerendipitousTopic = async (currentTopic: string, locale: Locale): Promise<string> => {
      try {
         const prompt = Prompts.getSerendipitousTopic(locale, currentTopic);
-        // FIX: Explicitly specify the generic type for callGeminiWithRetry to ensure 'response' is correctly typed.
         const response = await callGeminiWithRetry<GenerateContentResponse>(() => ai.models.generateContent({
             model: "gemini-2.5-flash",
-            contents: prompt,
+            contents: { parts: [{ text: prompt }] },
             config: {
                 responseMimeType: "application/json",
                 responseSchema: serendipitySchema,
@@ -245,7 +239,6 @@ export const getSerendipitousTopic = async (currentTopic: string, locale: Locale
     }
 }
 
-// FIX: Update the type for the `t` function to allow for an optional `params` object.
 export const getStarterTopics = (t: (key: string, params?: { [key: string]: string | number | undefined }) => any): StarterTopic[] => {
     return t('starterTopics');
 };
@@ -254,10 +247,9 @@ export const getStarterTopics = (t: (key: string, params?: { [key: string]: stri
 export const generateSummary = async (articleText: string, type: SummaryType, locale: Locale): Promise<string> => {
     const prompt = Prompts.generateSummary(locale, type, articleText);
     try {
-        // FIX: Explicitly specify the generic type for callGeminiWithRetry to ensure 'response' is correctly typed.
         const response = await callGeminiWithRetry<GenerateContentResponse>(() => ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: prompt,
+            contents: { parts: [{ text: prompt }] },
             config: {
                 responseMimeType: "application/json",
                 responseSchema: simpleResponseSchema,
@@ -275,14 +267,12 @@ export const generateSummary = async (articleText: string, type: SummaryType, lo
     }
 };
 
-// FIX: Update the type for the `t` function to allow for an optional `params` object.
 export const getSuggestedQuestions = async (articleText: string, locale: Locale, t: (key: string, params?: { [key: string]: string | number | undefined }) => any): Promise<string[]> => {
     try {
         const prompt = Prompts.getSuggestedQuestions(locale, articleText);
-        // FIX: Explicitly specify the generic type for callGeminiWithRetry to ensure 'response' is correctly typed.
         const response = await callGeminiWithRetry<GenerateContentResponse>(() => ai.models.generateContent({
             model: "gemini-2.5-flash",
-            contents: prompt,
+            contents: { parts: [{ text: prompt }] },
             config: {
                 responseMimeType: "application/json",
                 responseSchema: suggestedQuestionsSchema,
@@ -295,7 +285,6 @@ export const getSuggestedQuestions = async (articleText: string, locale: Locale,
     }
 };
 
-// FIX: Update the type for the `t` function to allow for an optional `params` object, fixing the "Expected 1 arguments, but got 2" error.
 export const startChat = (articleContext: string, locale: Locale, t: (key: string, params?: { [key: string]: string | number | undefined }) => any): Chat => {
     const systemInstruction = t('athena.systemInstruction', { articleContext });
     return ai.chats.create({
@@ -317,10 +306,9 @@ export const explainOrDefine = async (text: string, mode: 'Define' | 'Explain' |
             ? Prompts.defineText(locale, text)
             : Prompts.explainText(locale, text);
 
-        // FIX: Explicitly specify the generic type for callGeminiWithRetry to ensure 'response' is correctly typed.
         const response = await callGeminiWithRetry<GenerateContentResponse>(() => ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: prompt,
+            contents: { parts: [{ text: prompt }] },
             config: {
                 responseMimeType: "application/json",
                 responseSchema: simpleResponseSchema,

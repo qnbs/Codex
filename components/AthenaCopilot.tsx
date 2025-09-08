@@ -148,7 +148,7 @@ const AthenaCopilot: React.FC<AthenaCopilotProps> = ({ article, fullArticleText,
   };
 
   return (
-    <aside className="bg-gray-800/50 border border-gray-700/50 rounded-lg flex flex-col sticky top-28 h-[calc(100vh-8rem)] max-h-[800px]">
+    <aside className="bg-gray-800/50 border border-gray-700/50 rounded-lg flex flex-col sticky top-28 max-h-[75vh] lg:h-[calc(100vh-8rem)] lg:max-h-[800px]">
       <div className="flex items-center gap-3 p-4 border-b border-gray-700/50">
         <LightbulbIcon className="w-7 h-7 text-accent" />
         <h2 className="text-2xl font-bold text-white">{t('athena.title')}</h2>

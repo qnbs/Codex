@@ -1,92 +1,114 @@
+import { AppSettings, ArticleLength, Locale, SummaryType, ImageStyle } from '../types';
 
-// FIX: Correct import path
-import { AppSettings, SummaryType, Locale } from '../types';
-
-const getLanguageInstruction = (locale: Locale) => {
-    return locale === 'de' ? 'Antworte auf Deutsch.' : 'Respond in English.';
+const getArticleLengthPrompt = (locale: Locale, length: ArticleLength): string => {
+    const map = {
+        de: {
+            [ArticleLength.Concise]: "Der Artikel sollte kompakt sein, ungefähr 300 Wörter.",
+            [ArticleLength.Standard]: "Der Artikel sollte eine Standardlänge haben, ungefähr 600 Wörter.",
+            [ArticleLength.InDepth]: "Der Artikel sollte ausführlich sein, über 900 Wörter.",
+        },
+        en: {
+            [ArticleLength.Concise]: "The article should be concise, around 300 words.",
+            [ArticleLength.Standard]: "The article should be standard length, around 600 words.",
+            [ArticleLength.InDepth]: "The article should be in-depth, over 900 words.",
+        }
+    };
+    return map[locale][length];
 };
 
-const getArticleLengthInstruction = (length: AppSettings['articleLength']) => {
-    switch (length) {
-        case 'concise': return 'The article should be concise, around 300-400 words total.';
-        case 'in-depth': return 'The article should be detailed and in-depth, over 900 words.';
-        case 'standard':
-        default:
-            return 'The article should be a standard length, around 600 words.';
-    }
+const getImageStylePrompt = (locale: Locale, style: ImageStyle): string => {
+    const map = {
+        de: {
+            [ImageStyle.Photorealistic]: "Fotorealistisch",
+            [ImageStyle.Artistic]: "Künstlerisch",
+            [ImageStyle.Vintage]: "Vintage",
+            [ImageStyle.Minimalist]: "Minimalistisch",
+        },
+        en: {
+            [ImageStyle.Photorealistic]: "Photorealistic",
+            [ImageStyle.Artistic]: "Artistic",
+            [ImageStyle.Vintage]: "Vintage",
+            [ImageStyle.Minimalist]: "Minimalist",
+        }
+    };
+    return map[locale][style];
 };
 
 export const Prompts = {
     generateArticle: (locale: Locale, topic: string, settings: AppSettings): string => {
-        return `
-            ${getLanguageInstruction(locale)}
-            You are an expert educator and storyteller. Your task is to generate a comprehensive, engaging, and well-structured article about "${topic}".
-            The article must be factual, clear, and accessible to a general audience.
-            ${getArticleLengthInstruction(settings.articleLength)}
-            The structure should be JSON, following the provided schema exactly.
-            - The 'introduction' should be a captivating paragraph that sets the stage.
-            - Create 3 to 5 'sections', each with a clear 'heading', detailed 'content', and a visually descriptive 'imagePrompt'. The 'imagePrompt' should be detailed enough for an AI image generator to create a relevant and beautiful image. Do not mention the topic in the image prompt, just describe the scene.
-            - The 'conclusion' should summarize the key points and provide a final thought.
-            - If the topic is historical or has a clear timeline, provide 3-5 key events in the 'timeline' array. Otherwise, 'timeline' must be an empty array.
-        `;
+        const lengthText = getArticleLengthPrompt(locale, settings.articleLength);
+        if (locale === 'de') {
+            return `Erstelle einen umfassenden, enzyklopädischen Artikel auf Deutsch über "${topic}". Der Artikel sollte gut strukturiert, informativ und ansprechend sein, mit detaillierten Abschnitten. ${lengthText} Wenn das Thema historisch ist oder einen klaren chronologischen Verlauf hat (wie eine Biografie oder die Entwicklung einer Technologie), füge bitte eine Zeitleiste mit wichtigen Ereignissen hinzu.`;
+        }
+        return `Create a comprehensive, encyclopedic article in English about "${topic}". The article should be well-structured, informative, and engaging, with detailed sections. ${lengthText} If the topic is historical or has a clear chronological progression (like a biography or the development of a technology), please include a timeline of key events.`;
     },
 
     constructImage: (locale: Locale, prompt: string, settings: AppSettings): string => {
-        const styleMap = {
-            'photorealistic': 'hyperrealistic, photorealistic, 8k, detailed, professional photography',
-            'artistic': 'impressionistic, vibrant colors, artistic, oil painting',
-            'vintage': 'vintage photo, sepia tones, old-fashioned, grainy',
-            'minimalist': 'minimalist, clean lines, simple, modern'
-        };
-        const style = styleMap[settings.imageStyle] || styleMap.photorealistic;
-        return `${prompt}, in the style of ${style}.`;
+        const styleText = getImageStylePrompt(locale, settings.imageStyle);
+        if (locale === 'de') {
+            return `${prompt}, Stil ${styleText}, kinematographisch, dramatische Beleuchtung, hohe Detailgenauigkeit, 8k`;
+        }
+        return `${prompt}, ${styleText} style, cinematic, dramatic lighting, high detail, 8k`;
     },
-
+    
     getRelatedTopics: (locale: Locale, topic: string, settings: AppSettings): string => {
-        return `
-            ${getLanguageInstruction(locale)}
-            Based on the topic "${topic}", generate a list of ${settings.synapseDensity} related topics that would be interesting for someone curious about this subject.
-            For each topic, provide a 'name', a brief 'relevance' explaining its connection, and a one-sentence 'quickSummary'.
-            Follow the provided JSON schema exactly.
-        `;
+        if (locale === 'de') {
+            return `Basierend auf einem Artikel über "${topic}", generiere ${settings.synapseDensity} eng verwandte Themen auf Deutsch, die das Wissen eines Lesers erweitern würden. Gib für jedes Thema seine Relevanz und eine Zusammenfassung in einem Satz an.`;
+        }
+        return `Based on an article about "${topic}", generate ${settings.synapseDensity} closely related topics in English that would expand a reader's knowledge. For each topic, provide its relevance and a one-sentence summary.`;
     },
 
     getSerendipitousTopic: (locale: Locale, currentTopic: string): string => {
-        return `
-            ${getLanguageInstruction(locale)}
-            Given the topic "${currentTopic}", suggest one interesting, esoteric, and unexpected topic that is loosely or tangentially related. Think about surprising connections in history, science, or culture.
-            The goal is to provide a "serendipity" or "cosmic leap" moment for the user.
-            Return just the topic name in the specified JSON format.
-        `;
+        if (locale === 'de') {
+            return `Gib zum Thema "${currentTopic}" ein überraschendes, lose verwandtes "Kosmischer Sprung"-Thema auf Deutsch an. Es sollte eine unerwartete, aber faszinierende Verbindung sein. Gib nur den Themennamen zurück.`;
+        }
+        return `Given the topic "${currentTopic}", provide a surprising, loosely related "Cosmic Leap" topic in English. It should be an unexpected but fascinating connection. Return only the topic name.`;
     },
 
     generateSummary: (locale: Locale, type: SummaryType, articleText: string): string => {
-        const instructions = {
-            tldr: 'Provide a very short, one-sentence summary (a "TL;DR").',
-            eli5: 'Explain this as if I am 5 years old (an "ELI5"). Use simple words and analogies.',
-            keyPoints: 'List the 3-5 most important key points as a bulleted list.',
-            analogy: 'Provide a creative and insightful analogy or metaphor to explain the main concept.'
+        const prompts = {
+            de: {
+                [SummaryType.TLDR]: `Gib eine sehr kurze "Zusammenfassung" (TL;DR) des folgenden Artikels in ein oder zwei Sätzen.`,
+                [SummaryType.ELI5]: `Erkläre die Kernideen des folgenden Artikels, als ob du sie einem 5-jährigen Kind erklären würdest. Verwende einfache Worte und Analogien.`,
+                [SummaryType.KEY_POINTS]: `Liste die wichtigsten Punkte des folgenden Artikels als prägnante Aufzählung auf.`,
+                [SummaryType.ANALOGY]: `Gib eine einfache, kluge Analogie oder Metapher an, um das Hauptkonzept des folgenden Artikels zu verstehen.`
+            },
+            en: {
+                [SummaryType.TLDR]: `Provide a very brief "Too Long; Didn't Read" (TL;DR) summary of the following article in one or two sentences.`,
+                [SummaryType.ELI5]: `Explain the core ideas of the following article as if you were explaining it to a 5-year-old. Use simple words and analogies.`,
+                [SummaryType.KEY_POINTS]: `List the most important key points from the following article as concise bullet points.`,
+                [SummaryType.ANALOGY]: `Provide a simple, clever analogy or metaphor to understand the main concept of the following article.`
+            }
         };
-        return `
-            ${getLanguageInstruction(locale)}
-            Analyze the following article text and ${instructions[type]}. Return the response in the specified JSON format.
-            Article: """${articleText}"""
-        `;
-    },
-    
-    getSuggestedQuestions: (locale: Locale, articleText: string): string => {
-        return `
-            ${getLanguageInstruction(locale)}
-            Based on the provided article, generate a list of 3 insightful and thought-provoking follow-up questions a curious user might ask to deepen their understanding.
-            These questions should not be simple factual lookups but should encourage critical thinking or exploration of related concepts.
-            Return the questions as a simple JSON array of strings.
-            Article: """${articleText}"""
-        `;
+        const articlePreamble = locale === 'de' ? 'Artikel' : 'Article';
+        return `${prompts[locale][type]}\n\n${articlePreamble}:\n"""${articleText}"""`;
     },
 
-    visualizeText: (locale: Locale, text: string): string => `Create a detailed, visually descriptive prompt for an AI image generator to illustrate the concept of "${text}". Do not include the text "${text}" in the prompt itself. Focus on a scene that represents the concept.`,
+    getSuggestedQuestions: (locale: Locale, articleText: string): string => {
+        if (locale === 'de') {
+            return `Basierend auf dem folgenden Artikeltext auf Deutsch, erstelle eine Liste von 3 aufschlussreichen und nachdenklichen Folgefragen, die ein neugieriger Benutzer haben könnte. Stelle keine Fragen, die direkt im Text beantwortet werden, sondern solche, die zum tieferen Nachdenken oder zur Erkundung verwandter Tangenten anregen.\n\nArtikel:\n"""${articleText}"""`;
+        }
+        return `Based on the following article text in English, generate a list of 3 insightful and thoughtful follow-up questions a curious user might have. Do not ask questions that are directly answered in the text, but rather ones that prompt deeper thinking or exploration of related tangents.\n\nArticle:\n"""${articleText}"""`;
+    },
     
-    defineText: (locale: Locale, text: string): string => `${getLanguageInstruction(locale)} Provide a concise, one-sentence definition of "${text}".`,
+    visualizeText: (locale: Locale, text: string): string => {
+        if (locale === 'de') {
+            return `Ein kinoreifes Bild, das das Konzept von: ${text} visualisiert`;
+        }
+        return `A cinematic image visualizing the concept of: ${text}`;
+    },
+
+    defineText: (locale: Locale, text: string): string => {
+        if (locale === 'de') {
+            return `Gib eine knappe, wörterbuchartige Definition auf Deutsch für den Begriff: "${text}".`;
+        }
+        return `Provide a concise, dictionary-style definition in English for the term: "${text}".`;
+    },
     
-    explainText: (locale: Locale, text: string): string => `${getLanguageInstruction(locale)} Explain the concept of "${text}" in a single, easy-to-understand paragraph.`,
+    explainText: (locale: Locale, text: string): string => {
+        if (locale === 'de') {
+            return `Erkläre das Konzept von "${text}" auf eine einfache und leicht verständliche Weise auf Deutsch, als ob du es einem neugierigen Oberstufenschüler erklären würdest.`;
+        }
+        return `Explain the concept of "${text}" in a simple and easy-to-understand way in English, as if explaining to a curious high school student.`;
+    }
 };
