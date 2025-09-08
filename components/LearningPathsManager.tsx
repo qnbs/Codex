@@ -1,7 +1,7 @@
 import React, { useState, useContext, DragEvent, useRef } from 'react';
 import { UserDataContext } from '../context/AppContext';
 import { useLocalization } from '../context/LocalizationContext';
-import { ChevronDownIcon, ReorderIcon, TrashIcon, BookOpenIcon, PathIcon } from './IconComponents';
+import { ChevronDownIcon, ChevronUpIcon, ReorderIcon, TrashIcon, BookOpenIcon, PathIcon } from './IconComponents';
 import { LearningPath } from '../types';
 
 interface LearningPathsManagerProps {
@@ -41,6 +41,10 @@ const LearningPathsManager: React.FC<LearningPathsManagerProps> = ({ handleSearc
         setDragOverIndex(null);
     };
 
+    const handleMoveArticle = (pathName: string, fromIndex: number, toIndex: number) => {
+        reorderArticlesInPath(pathName, fromIndex, toIndex);
+    };
+
     const toggleAccordion = (pathName: string) => {
         setOpenPath(prev => (prev === pathName ? null : pathName));
     };
@@ -76,7 +80,7 @@ const LearningPathsManager: React.FC<LearningPathsManagerProps> = ({ handleSearc
                                 </div>
                             </div>
                             <div className="flex items-center ml-4">
-                               <button onClick={(e) => { e.stopPropagation(); clearLearningPathItem(path.name); }} className="p-1 text-gray-500 hover:text-red-400" title={t('panels.learningPaths.deletePath')}>
+                               <button onClick={(e) => { e.stopPropagation(); clearLearningPathItem(path.name); }} className="p-1 text-gray-500 hover:text-red-400" title={t('panels.learningPaths.deletePath')} aria-label={t('panels.learningPaths.deletePath')}>
                                     <TrashIcon className="w-4 h-4" />
                                </button>
                                <ChevronDownIcon className={`w-6 h-6 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
@@ -95,23 +99,44 @@ const LearningPathsManager: React.FC<LearningPathsManagerProps> = ({ handleSearc
                                                 onDrop={(e) => handleDrop(e, path.name, index)}
                                                 className={`flex items-center gap-2 p-2 rounded-md group bg-gray-700/50 transition-all ${draggedItem.current?.index === index ? 'opacity-50' : ''} ${dragOverIndex === index ? 'border-t-2 border-accent' : 'border-t-2 border-transparent'}`}
                                             >
-                                                <button className="cursor-move p-1 text-gray-500 touch-none">
-                                                    <ReorderIcon className="w-4 h-4" />
-                                                </button>
+                                                <div className="flex items-center">
+                                                    <button className="cursor-move p-1 text-gray-500 touch-none" aria-label="Drag to reorder">
+                                                        <ReorderIcon className="w-4 h-4" />
+                                                    </button>
+                                                    <div className="flex flex-col">
+                                                        <button
+                                                            onClick={() => handleMoveArticle(path.name, index, index - 1)}
+                                                            disabled={index === 0}
+                                                            className="p-0.5 text-gray-500 hover:text-white disabled:opacity-30"
+                                                            aria-label={t('panels.learningPaths.moveUp')}
+                                                        >
+                                                            <ChevronUpIcon className="w-3 h-3" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleMoveArticle(path.name, index, index + 1)}
+                                                            disabled={index === path.articles.length - 1}
+                                                            className="p-0.5 text-gray-500 hover:text-white disabled:opacity-30"
+                                                            aria-label={t('panels.learningPaths.moveDown')}
+                                                        >
+                                                            <ChevronDownIcon className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                </div>
                                                 <input
                                                     type="checkbox"
                                                     checked={article.completed}
                                                     onChange={() => toggleArticleCompletion(path.name, article.title)}
                                                     className="h-4 w-4 rounded text-accent bg-gray-700 border-gray-600 focus:ring-accent"
+                                                    aria-label={`Mark "${article.title}" as ${article.completed ? 'incomplete' : 'complete'}`}
                                                 />
                                                 <span className={`flex-grow text-sm truncate ${article.completed ? 'text-gray-500 line-through' : 'text-gray-300'}`}>
                                                     {article.title}
                                                 </span>
-                                                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={() => { handleSearch(article.title); closePanel(); }} className="p-1 text-gray-400 hover:text-accent" title={t('panels.learningPaths.goToArticle')}>
+                                                <div className="flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                                    <button onClick={() => { handleSearch(article.title); closePanel(); }} className="p-1 text-gray-400 hover:text-accent" title={t('panels.learningPaths.goToArticle')} aria-label={t('panels.learningPaths.goToArticle')}>
                                                         <BookOpenIcon className="w-4 h-4" />
                                                     </button>
-                                                    <button onClick={() => removeArticleFromPath(path.name, article.title)} className="p-1 text-gray-400 hover:text-red-400" title={t('panels.learningPaths.removeFromPath')}>
+                                                    <button onClick={() => removeArticleFromPath(path.name, article.title)} className="p-1 text-gray-400 hover:text-red-400" title={t('panels.learningPaths.removeFromPath')} aria-label={t('panels.learningPaths.removeFromPath')}>
                                                         <TrashIcon className="w-4 h-4" />
                                                     </button>
                                                 </div>

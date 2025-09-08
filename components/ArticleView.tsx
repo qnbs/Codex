@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useRef, useEffect, useMemo, useContext, useCallback } from 'react';
 import { ArticleData, StarterTopic, AppSettings, TextSize, SummaryType, TimelineEvent } from '../types';
 import { BookOpenIcon, SparklesIcon, TextSelectIcon, WandIcon, ImageIcon, CloseIcon, ClockIcon, ReloadIcon, ClipboardCopyIcon, TimelineIcon, SummarizeIcon, KeyPointsIcon, Eli5Icon, AnalogyIcon, PathIcon, PlusIcon, BookmarkIcon, VideoCameraIcon } from './IconComponents';
@@ -116,6 +117,7 @@ const MediaDisplay = ({ imageUrl, videoUrl, prompt, onGenerateImage, onGenerateV
                                 onClick={() => setShowEditUI(true)}
                                 className="p-2 bg-gray-900/60 backdrop-blur-sm rounded-full text-white hover:bg-accent hover:text-accent-contrast transition-all"
                                 title={t('article.editImage.title')}
+                                aria-label={t('article.editImage.title')}
                             >
                                 <WandIcon className="w-5 h-5" />
                             </button>
@@ -158,7 +160,7 @@ const MediaDisplay = ({ imageUrl, videoUrl, prompt, onGenerateImage, onGenerateV
                          <p className="text-xs text-gray-400 font-semibold uppercase">{t('article.imagePrompt')}</p>
                          <button onClick={handleCopy} className="flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 transition-transform active:scale-95">
                              <ClipboardCopyIcon className="w-3.5 h-3.5" isCopied={isCopied} />
-                             {isCopied ? t('common.copied') : t('common.copy')}
+                             {isCopied ? t('common.copied') : t('common.copyPrompt')}
                          </button>
                      </div>
                      <p className="text-sm text-gray-300 mt-2 font-mono bg-gray-900/50 p-2 rounded-md">
@@ -284,7 +286,7 @@ const AddToPathDropdown = ({ articleTitle }: { articleTitle: string }) => {
     
     return (
         <div className="relative group">
-            <button className="flex items-center gap-1.5 p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors" title={t('article.addToPath.title')}>
+            <button className="flex items-center gap-1.5 p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors" title={t('article.addToPath.title')} aria-label={t('article.addToPath.title')}>
                 <PathIcon className="w-6 h-6" />
                 <PlusIcon className="w-4 h-4 -ml-2" />
             </button>
@@ -532,6 +534,7 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, isLoading, error, on
                         onClick={() => toggleBookmark(article.title)} 
                         className={`p-2 rounded-full transition-colors hover:bg-gray-700/80 ${isBookmarked ? 'text-accent hover:text-accent-hover' : 'text-gray-400 hover:text-white'}`} 
                         title={isBookmarked ? t('article.bookmark.remove') : t('article.bookmark.add')}
+                        aria-label={isBookmarked ? t('article.bookmark.remove') : t('article.bookmark.add')}
                      >
                         <BookmarkIcon className="w-6 h-6" isFilled={isBookmarked} />
                     </button>
@@ -604,9 +607,9 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, isLoading, error, on
                     role="toolbar"
                     aria-label={t('interaction.toolbarLabel')}
                 >
-                    <button onClick={() => openInteractionModal('Define')} className="p-3 rounded-full hover:bg-gray-700" title={t('interaction.define')}><WandIcon className="w-5 h-5"/></button>
-                    <button onClick={() => openInteractionModal('Explain')} className="p-3 rounded-full hover:bg-gray-700" title={t('interaction.explain')}><TextSelectIcon className="w-5 h-5"/></button>
-                    <button onClick={() => openInteractionModal('Visualize')} className="p-3 rounded-full hover:bg-gray-700" title={t('interaction.visualize')}><ImageIcon className="w-5 h-5"/></button>
+                    <button onClick={() => openInteractionModal('Define')} className="p-3 rounded-full hover:bg-gray-700" title={t('interaction.define')} aria-label={t('interaction.define')}><WandIcon className="w-5 h-5"/></button>
+                    <button onClick={() => openInteractionModal('Explain')} className="p-3 rounded-full hover:bg-gray-700" title={t('interaction.explain')} aria-label={t('interaction.explain')}><TextSelectIcon className="w-5 h-5"/></button>
+                    <button onClick={() => openInteractionModal('Visualize')} className="p-3 rounded-full hover:bg-gray-700" title={t('interaction.visualize')} aria-label={t('interaction.visualize')}><ImageIcon className="w-5 h-5"/></button>
                 </div>
             )}
             

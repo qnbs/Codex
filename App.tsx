@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useCallback, useEffect, useRef, useContext, useMemo } from 'react';
 import SearchBar from './components/SearchBar';
 import ArticleView from './components/ArticleView';
@@ -8,7 +9,7 @@ import SynapseGraph from './components/SynapseGraph';
 import { ArticleData, RelatedTopic, StarterTopic, AppSettings, AccentColor, FontFamily, ArticleLength, ImageStyle, TextSize, LearningPath, SessionSnapshot, ChatMessage, CodexBackupData, Notification, NotificationType, Language, UserDataContextType, StoredImage } from './types';
 import { generateArticleContent, getRelatedTopics, generateImageForSection, getSerendipitousTopic, getStarterTopics, startChat, editImage, generateVideoForSection } from './services/geminiService';
 import * as db from './services/dbService';
-import { HistoryIcon, BookmarkIcon, CogIcon, CloseIcon, PathIcon, CameraIcon, TrashIcon, UploadIcon, DownloadIcon, QuestionMarkCircleIcon, SparklesIcon, CommandIcon, ImageIcon, SearchIcon, MoreVerticalIcon } from './components/IconComponents';
+import { HistoryIcon, BookmarkIcon, CogIcon, CloseIcon, PathIcon, CameraIcon, TrashIcon, UploadIcon, DownloadIcon, QuestionMarkCircleIcon, SparklesIcon, CommandIcon, ImageIcon, SearchIcon, MoreVerticalIcon, ClipboardCopyIcon } from './components/IconComponents';
 import SettingsModal from './components/SettingsModal';
 import HelpGuide from './components/HelpGuide';
 import EntryPortal from './components/EntryPortal';
@@ -601,6 +602,7 @@ function CodexApp({ initialUserData }: { initialUserData: InitialUserData }) {
   const [chat, setChat] = useState<Chat | null>(null);
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<StoredImage | null>(null);
+  const [isLightboxCopied, setIsLightboxCopied] = useState(false);
   
   const { settings, setSettings } = useContext(SettingsContext)!;
   const { addNotification } = useNotification();
@@ -894,6 +896,13 @@ function CodexApp({ initialUserData }: { initialUserData: InitialUserData }) {
       addNotification(t('notifications.snapshotRestored', { name: snapshot.name }), 'success');
   }, [closeAllPanels, addNotification, t]);
 
+  const handleCopyLightboxPrompt = useCallback(() => {
+    if (!lightboxImage) return;
+    navigator.clipboard.writeText(lightboxImage.prompt);
+    setIsLightboxCopied(true);
+    setTimeout(() => setIsLightboxCopied(false), 2000);
+  }, [lightboxImage]);
+
   if (!settings.hasOnboarded) {
     return <EntryPortal onStart={() => setSettings(prev => ({...prev, hasOnboarded: true}))} />;
   }
@@ -1053,8 +1062,15 @@ function CodexApp({ initialUserData }: { initialUserData: InitialUserData }) {
                 <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col relative" onClick={e => e.stopPropagation()}>
                     <img src={lightboxImage.imageUrl} alt={lightboxImage.prompt} className="w-full h-auto object-contain flex-grow rounded-t-lg bg-gray-900" />
                     <div className="p-4 bg-gray-900/50 rounded-b-lg border-t border-gray-700">
-                        <p className="text-xs text-gray-400 font-semibold uppercase">{t('article.imagePrompt')}</p>
-                        <p className="text-sm text-gray-300 mt-1 font-mono">{lightboxImage.prompt}</p>
+                        <div className="flex justify-between items-start gap-4">
+                            <div>
+                                <p className="text-xs text-gray-400 font-semibold uppercase">{t('article.imagePrompt')}</p>
+                                <p className="text-sm text-gray-300 mt-1 font-mono">{lightboxImage.prompt}</p>
+                            </div>
+                            <button onClick={handleCopyLightboxPrompt} className="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white flex-shrink-0" aria-label={t('common.copy')}>
+                                <ClipboardCopyIcon className="w-5 h-5" isCopied={isLightboxCopied} />
+                            </button>
+                        </div>
                         <p className="text-xs text-gray-500 mt-2">{t('panels.imageLibrary.sourceArticle')}: {lightboxImage.topic}</p>
                     </div>
                     <div className="absolute top-2 right-2 flex gap-2">
@@ -1067,6 +1083,7 @@ function CodexApp({ initialUserData }: { initialUserData: InitialUserData }) {
                             }} 
                             className="p-2 bg-red-800/80 text-white rounded-full hover:bg-red-700 transition-colors"
                             title={t('panels.deleteEntry')}
+                            aria-label={t('panels.deleteEntry')}
                         >
                             <TrashIcon className="w-5 h-5"/>
                         </button>

@@ -5,7 +5,8 @@
         "loading": "Denke nach...",
         "retry": "Erneut versuchen",
         "ok": "OK",
-        "copy": "Prompt kopieren",
+        "copyPrompt": "Prompt kopieren",
+        "copy": "Kopieren",
         "copied": "Kopiert!",
         "save": "Speichern",
         "search": "Suchen",
@@ -127,6 +128,8 @@
             "goToArticle": "Zum Artikel",
             "removeFromPath": "Aus Pfad entfernen",
             "deletePath": "Pfad löschen",
+            "moveUp": "Nach oben",
+            "moveDown": "Nach unten",
             "noArticles": "Noch keine Artikel in diesem Pfad.",
             "noPathsTitle": "Keine Lernpfade erstellt",
             "noPathsDescription": "Sie können einen neuen Pfad erstellen, indem Sie in der Artikelansicht einen Artikel hinzufügen."

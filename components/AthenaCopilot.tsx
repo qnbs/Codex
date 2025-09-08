@@ -48,15 +48,33 @@ const ChatBubble = React.memo(({ msg }: { msg: ChatMessage }) => {
     };
     
     const isModel = msg.role === 'model';
+    const bubbleBaseClasses = "max-w-xs md:max-w-sm lg:max-w-md rounded-lg px-4 py-2 relative";
+
+    const modelBubbleClasses = `
+        ${bubbleBaseClasses} bg-gray-700 text-gray-200
+        after:content-[''] after:absolute after:bottom-0 after:left-[-7px] 
+        after:w-0 after:h-0 
+        after:border-b-[10px] after:border-b-gray-700 
+        after:border-r-[8px] after:border-r-transparent
+    `;
+
+    const userBubbleClasses = `
+        ${bubbleBaseClasses} bg-accent text-accent-contrast
+        after:content-[''] after:absolute after:bottom-0 after:right-[-7px] 
+        after:w-0 after:h-0 
+        after:border-b-[10px] after:border-b-accent 
+        after:border-l-[8px] after:border-l-transparent
+    `;
+
 
     return (
         <div className={`flex items-end gap-2 group ${isModel ? 'justify-start' : 'justify-end'}`}>
             {isModel && (
-                 <button onClick={handleCopy} title={isCopied ? t('common.copied') : t('common.copy')} className="mb-1 text-gray-500 hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                 <button onClick={handleCopy} title={t('common.copy')} aria-label={t('common.copy')} className="mb-1 text-gray-500 hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">
                     <ClipboardCopyIcon className="w-4 h-4" isCopied={isCopied} />
                 </button>
             )}
-            <div className={`max-w-xs md:max-w-sm lg:max-w-md rounded-lg px-4 py-2 ${isModel ? 'bg-gray-700 text-gray-200' : 'bg-accent text-accent-contrast'}`}>
+            <div className={isModel ? modelBubbleClasses : userBubbleClasses}>
                 <div className="prose prose-invert prose-sm whitespace-pre-wrap" style={{ wordBreak: 'break-word' }}>{msg.parts[0].text}</div>
             </div>
         </div>

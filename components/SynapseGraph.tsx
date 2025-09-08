@@ -58,10 +58,22 @@ const SynapseGraph: React.FC<SynapseGraphProps> = ({ currentTopic, relatedTopics
               const angle = (index / relatedTopics.length) * 2 * Math.PI;
               const x = Math.cos(angle) * 320; 
               const y = Math.sin(angle) * 200;
+
+              const centralNodeRadius = 96; // 192px / 2
+              const satelliteNodeRadius = 64; // 128px / 2
+              const distance = Math.sqrt(x*x + y*y);
+              const lineWidth = distance - centralNodeRadius - satelliteNodeRadius;
+              const lineOffsetX = Math.cos(angle) * centralNodeRadius;
+              const lineOffsetY = Math.sin(angle) * centralNodeRadius;
               
               return (
                   <React.Fragment key={topic.name}>
-                    <div className="absolute top-1/2 left-1/2 h-px bg-gray-600 origin-left z-0" style={{ width: `${Math.sqrt(x*x + y*y)}px`, transform: `translate(0, 0) rotate(${angle}rad)` }} ></div>
+                    <div className="absolute top-1/2 left-1/2 h-px bg-gray-600 origin-left z-0" 
+                        style={{ 
+                            width: `${lineWidth}px`, 
+                            transform: `translate(${lineOffsetX}px, ${lineOffsetY}px) rotate(${angle}rad)` 
+                        }} 
+                    />
                     <div className="absolute top-1/2 left-1/2 z-10 group" style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` }} >
                       <button 
                         onClick={() => onTopicClick(topic.name)}

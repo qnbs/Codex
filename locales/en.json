@@ -5,7 +5,8 @@
         "loading": "Thinking...",
         "retry": "Retry",
         "ok": "OK",
-        "copy": "Copy Prompt",
+        "copyPrompt": "Copy Prompt",
+        "copy": "Copy",
         "copied": "Copied!",
         "save": "Save",
         "search": "Search",
@@ -127,6 +128,8 @@
             "goToArticle": "Go to Article",
             "removeFromPath": "Remove from Path",
             "deletePath": "Delete Path",
+            "moveUp": "Move up",
+            "moveDown": "Move down",
             "noArticles": "No articles in this path yet.",
             "noPathsTitle": "No Learning Paths Created",
             "noPathsDescription": "You can create a new path by adding an article to it from the article view."
