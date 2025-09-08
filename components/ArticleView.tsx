@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useMemo, useContext, useCallback } from 'react';
 import { ArticleData, StarterTopic, AppSettings, TextSize, SummaryType, TimelineEvent } from '../types';
 import { BookOpenIcon, SparklesIcon, TextSelectIcon, WandIcon, ImageIcon, CloseIcon, ClockIcon, ReloadIcon, ClipboardCopyIcon, TimelineIcon, SummarizeIcon, KeyPointsIcon, Eli5Icon, AnalogyIcon, PathIcon, PlusIcon, BookmarkIcon, VideoCameraIcon } from './IconComponents';
@@ -55,27 +56,29 @@ const MediaDisplay = ({ imageUrl, videoUrl, prompt, onGenerateImage, onGenerateV
     const videoLoadingMessages: string[] = t('article.video.loadingMessages');
 
     useEffect(() => {
-        let intervalId: number;
-        if (isGeneratingVideo) {
-            // Set initial message from the hook
-            setVideoStatusMessage(generatingVideoInfo.status || videoLoadingMessages[0]);
-            
-            // Cycle through generic messages
-            let messageIndex = 0;
-            intervalId = window.setInterval(() => {
-                messageIndex = (messageIndex + 1) % videoLoadingMessages.length;
-                setVideoStatusMessage(videoLoadingMessages[messageIndex]);
-            }, 3000);
-        }
-        return () => clearInterval(intervalId);
-    }, [isGeneratingVideo, videoLoadingMessages]);
+        let intervalId: number | undefined;
 
-    // Update message when a new specific status comes from the hook
-    useEffect(() => {
-        if (isGeneratingVideo && generatingVideoInfo.status) {
-            setVideoStatusMessage(generatingVideoInfo.status);
+        if (isGeneratingVideo) {
+            // If a specific status comes from the hook, display it.
+            if (generatingVideoInfo.status) {
+                setVideoStatusMessage(generatingVideoInfo.status);
+            } else {
+                // Otherwise, start cycling through generic messages.
+                setVideoStatusMessage(videoLoadingMessages[0]);
+                let messageIndex = 0;
+                intervalId = window.setInterval(() => {
+                    messageIndex = (messageIndex + 1) % videoLoadingMessages.length;
+                    setVideoStatusMessage(videoLoadingMessages[messageIndex]);
+                }, 4000);
+            }
         }
-    }, [generatingVideoInfo.status, isGeneratingVideo]);
+
+        return () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
+    }, [isGeneratingVideo, generatingVideoInfo.status, videoLoadingMessages]);
 
 
     if (!prompt) return null;

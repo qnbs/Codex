@@ -1,9 +1,9 @@
-import React from 'react';
-import { useLocalization } from '../context/LocalizationContext';
+import React, { useContext } from 'react';
+import { LocalizationContext } from '../context/LocalizationContext';
 
 const LoadingSpinner = ({ text }: { text?: string }) => {
-  const { t } = useLocalization();
-  const displayText = text || t('common.loading');
+  const localization = useContext(LocalizationContext);
+  const displayText = text || (localization ? localization.t('common.loading') : 'Thinking...');
   
   return (
     <div className="flex flex-col items-center justify-center space-y-3">

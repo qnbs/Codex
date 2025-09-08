@@ -70,7 +70,7 @@ Codex is packed with features that redefine knowledge discovery:
     -   **Text Generation:** `gemini-2.5-flash`
     -   **Image Generation:** `imagen-4.0-generate-001`
     -   **Image Editing:** `gemini-2.5-flash-image-preview`
--   **Storage:** Browser LocalStorage for persistent storage of all user data.
+-   **Storage:** Browser **IndexedDB** for robust, persistent storage of all user data.
 
 ---
 
@@ -172,7 +172,7 @@ Codex ist vollgepackt mit Funktionen, die das Entdecken von Wissen neu definiere
   - **Textgenerierung:** `gemini-2.5-flash`
   - **Bilderzeugung:** `imagen-4.0-generate-001`
   - **Bildbearbeitung:** `gemini-2.5-flash-image-preview`
-- **Speicher:** Browser LocalStorage für die persistente Speicherung aller Benutzerdaten.
+- **Speicher:** Browser **IndexedDB** für robuste, persistente Speicherung aller Benutzerdaten.
 
 ---
 

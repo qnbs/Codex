@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useRef, useContext, useMemo } from 'react';
 import SearchBar from './components/SearchBar';
 import ArticleView from './components/ArticleView';
@@ -5,7 +6,7 @@ import AthenaCopilot from './components/AthenaCopilot';
 import SynapseGraph from './components/SynapseGraph';
 import { ArticleData, RelatedTopic, StarterTopic, AppSettings, AccentColor, FontFamily, ArticleLength, ImageStyle, TextSize, LearningPath, SessionSnapshot, ChatMessage, CodexBackupData, Notification, NotificationType, Language, UserDataContextType, StoredImage } from './types';
 import { generateArticleContent, getRelatedTopics, generateImageForSection, getSerendipitousTopic, getStarterTopics, startChat, editImage, generateVideoForSection } from './services/geminiService';
-import { addImage, getAllImages, deleteImage, clearImages, bulkAddImages } from './services/dbService';
+import * as db from './services/dbService';
 import { HistoryIcon, BookmarkIcon, CogIcon, CloseIcon, PathIcon, CameraIcon, TrashIcon, UploadIcon, DownloadIcon, QuestionMarkCircleIcon, SparklesIcon, CommandIcon, ImageIcon, SearchIcon, MoreVerticalIcon } from './components/IconComponents';
 import SettingsModal from './components/SettingsModal';
 import HelpGuide from './components/HelpGuide';
@@ -16,39 +17,11 @@ import BottomNavBar from './components/BottomNavBar';
 import { LocalizationProvider, useLocalization } from './context/LocalizationContext';
 import { SettingsContext, UserDataContext, NotificationContext } from './context/AppContext';
 import type { Chat } from '@google/genai';
+import LoadingSpinner from './components/LoadingSpinner';
 
 
 // HOOKS
 const useNotification = () => useContext(NotificationContext)!;
-
-const useLocalStorage = <T,>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    if (typeof window === 'undefined') {
-        return initialValue;
-    }
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.error(error);
-      return initialValue;
-    }
-  });
-
-  const setValue: React.Dispatch<React.SetStateAction<T>> = (value) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  return [storedValue, setValue];
-};
 
 const getInitialLocale = (): Language => {
     if (typeof window === 'undefined') return Language.English;
@@ -65,12 +38,19 @@ const defaultSettings: AppSettings = {
     imageStyle: ImageStyle.Photorealistic,
     autoLoadImages: true,
     synapseDensity: 5,
+    hasOnboarded: false,
 };
 
 // Provider Components
-const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
-    const [settings, setSettings] = useLocalStorage<AppSettings>('codex-settings', defaultSettings);
-    const mergedSettings = useMemo(() => ({ ...defaultSettings, ...settings }), [settings]);
+const SettingsProvider = ({ children, initialSettings }: { children: React.ReactNode, initialSettings: AppSettings }) => {
+    const [settings, setSettingsState] = useState<AppSettings>(initialSettings);
+
+    const setSettings = useCallback((value: AppSettings | ((val: AppSettings) => AppSettings)) => {
+        const newSettings = value instanceof Function ? value(settings) : value;
+        db.saveSettings(newSettings)
+          .then(() => setSettingsState(newSettings))
+          .catch(err => console.error("Failed to save settings", err));
+    }, [settings]);
 
     useEffect(() => {
         const root = document.documentElement;
@@ -80,20 +60,20 @@ const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
             [AccentColor.Rose]: { color: '#f43f5e', hover: '#fb7185', text: '#ffffff' },
             [AccentColor.Emerald]: { color: '#10b981', hover: '#34d399', text: '#ffffff' },
         };
-        const selectedColor = colorMap[mergedSettings.accentColor];
+        const selectedColor = colorMap[settings.accentColor];
         root.style.setProperty('--accent-color', selectedColor.color);
         root.style.setProperty('--accent-color-hover', selectedColor.hover);
         root.style.setProperty('--accent-text', selectedColor.text);
 
         document.body.classList.remove('font-artistic', 'font-modern');
-        document.body.classList.add(mergedSettings.fontFamily === FontFamily.Artistic ? 'font-artistic' : 'font-modern');
+        document.body.classList.add(settings.fontFamily === FontFamily.Artistic ? 'font-artistic' : 'font-modern');
         
-        document.documentElement.lang = mergedSettings.language;
+        document.documentElement.lang = settings.language;
 
-    }, [mergedSettings.accentColor, mergedSettings.fontFamily, mergedSettings.language]);
+    }, [settings.accentColor, settings.fontFamily, settings.language]);
 
     return (
-        <SettingsContext.Provider value={{ settings: mergedSettings, setSettings }}>
+        <SettingsContext.Provider value={{ settings, setSettings }}>
             {children}
         </SettingsContext.Provider>
     );
@@ -133,8 +113,13 @@ const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 const useUserData = (
-    settings: AppSettings, 
-    setSettings: (value: AppSettings | ((val: AppSettings) => AppSettings)) => void,
+    initialData: {
+        history: string[];
+        bookmarks: string[];
+        learningPaths: LearningPath[];
+        sessionSnapshots: SessionSnapshot[];
+        imageLibrary: StoredImage[];
+    },
     article: ArticleData | null, 
     currentTopic: string, 
     messages: ChatMessage[], 
@@ -144,64 +129,73 @@ const useUserData = (
 ): UserDataContextType => {
     const { addNotification } = useNotification();
     const { t } = useLocalization();
-    const [history, setHistory] = useLocalStorage<string[]>('codex-history', []);
-    const [bookmarks, setBookmarks] = useLocalStorage<string[]>('codex-bookmarks', []);
-    const [learningPaths, setLearningPaths] = useLocalStorage<LearningPath[]>('codex-learning-paths', []);
-    const [sessionSnapshots, setSessionSnapshots] = useLocalStorage<SessionSnapshot[]>('codex-session-snapshots', []);
-    const [imageLibrary, setImageLibrary] = useState<StoredImage[]>([]);
-
+    const [history, setHistory] = useState<string[]>(initialData.history);
+    const [bookmarks, setBookmarks] = useState<string[]>(initialData.bookmarks);
+    const [learningPaths, setLearningPaths] = useState<LearningPath[]>(initialData.learningPaths);
+    const [sessionSnapshots, setSessionSnapshots] = useState<SessionSnapshot[]>(initialData.sessionSnapshots);
+    const [imageLibrary, setImageLibrary] = useState<StoredImage[]>(initialData.imageLibrary);
+    
+    // This effect ensures state is updated if initialData changes after first render (e.g. after import)
     useEffect(() => {
-        getAllImages().then(setImageLibrary).catch(err => {
-            console.error("Failed to load images from DB", err);
-            addNotification(t('errors.dbLoadFailed'), 'error');
-        });
-    }, [addNotification, t]);
+        setHistory(initialData.history);
+        setBookmarks(initialData.bookmarks);
+        setLearningPaths(initialData.learningPaths);
+        setSessionSnapshots(initialData.sessionSnapshots);
+        setImageLibrary(initialData.imageLibrary);
+    }, [initialData]);
 
     const toggleBookmark = useCallback((topic: string) => {
-        setBookmarks(prev => {
-            const isBookmarked = prev.includes(topic);
-            if (isBookmarked) {
-                addNotification(t('notifications.bookmarkRemoved', { topic }), 'info');
-                return prev.filter(b => b !== topic);
-            } else {
-                addNotification(t('notifications.bookmarkAdded', { topic }), 'success');
-                return [topic, ...prev];
-            }
-        });
-    }, [addNotification, setBookmarks, t]);
+        const isBookmarked = bookmarks.includes(topic);
+        if (isBookmarked) {
+            db.deleteBookmark(topic)
+                .then(() => {
+                    setBookmarks(prev => prev.filter(b => b !== topic));
+                    addNotification(t('notifications.bookmarkRemoved', { topic }), 'info');
+                })
+                .catch(err => console.error("Failed to delete bookmark", err));
+        } else {
+            db.addBookmark(topic)
+                .then(() => {
+                    setBookmarks(prev => [topic, ...prev]);
+                    addNotification(t('notifications.bookmarkAdded', { topic }), 'success');
+                })
+                .catch(err => console.error("Failed to add bookmark", err));
+        }
+    }, [bookmarks, addNotification, t]);
+
+    const updateLearningPaths = useCallback((newPaths: LearningPath[]) => {
+        db.saveLearningPaths(newPaths)
+            .then(() => setLearningPaths(newPaths))
+            .catch(err => console.error("Failed to save learning paths", err));
+    }, []);
 
     const handleAddToPath = useCallback((pathName: string, articleTitle: string) => {
-        setLearningPaths(paths => {
-            let articleAdded = false;
-            const updatedPaths = paths.map(p => {
-                if (p.name === pathName) {
-                    if (!p.articles.some(a => a.title === articleTitle)) {
-                        articleAdded = true;
-                        return { ...p, articles: [...p.articles, { title: articleTitle, completed: false }] };
-                    } else {
-                        addNotification(t('notifications.articleAlreadyInPath', { articleTitle, pathName }), 'info');
-                    }
+        let articleAdded = false;
+        const updatedPaths = learningPaths.map(p => {
+            if (p.name === pathName) {
+                if (!p.articles.some(a => a.title === articleTitle)) {
+                    articleAdded = true;
+                    return { ...p, articles: [...p.articles, { title: articleTitle, completed: false }] };
+                } else {
+                    addNotification(t('notifications.articleAlreadyInPath', { articleTitle, pathName }), 'info');
                 }
-                return p;
-            });
-
-            if (articleAdded) {
-                addNotification(t('notifications.articleAddedToPath', { articleTitle, pathName }), 'success');
             }
-            return updatedPaths;
+            return p;
         });
-    }, [addNotification, setLearningPaths, t]);
+        if (articleAdded) {
+            updateLearningPaths(updatedPaths);
+            addNotification(t('notifications.articleAddedToPath', { articleTitle, pathName }), 'success');
+        }
+    }, [learningPaths, addNotification, t, updateLearningPaths]);
 
 
     const handleCreatePath = useCallback((pathName: string) => {
-        setLearningPaths(paths => {
-            if (!paths.some(p => p.name === pathName)) {
-                addNotification(t('notifications.pathCreated', { pathName }), 'success');
-                return [...paths, { name: pathName, articles: [] }];
-            }
-            return paths;
-        });
-    }, [addNotification, setLearningPaths, t]);
+        if (!learningPaths.some(p => p.name === pathName)) {
+            const newPaths = [...learningPaths, { name: pathName, articles: [] }];
+            updateLearningPaths(newPaths);
+            addNotification(t('notifications.pathCreated', { pathName }), 'success');
+        }
+    }, [learningPaths, addNotification, t, updateLearningPaths]);
 
     const handleSaveSnapshot = useCallback(() => {
         if (!article || !currentTopic) return;
@@ -215,14 +209,19 @@ const useUserData = (
                 relatedTopics,
                 chatHistory: messages,
             };
-            setSessionSnapshots(prev => [snapshot, ...prev]);
-            closeAllPanels();
-            addNotification(t('notifications.snapshotSaved', { name }), 'success');
+            const newSnapshots = [snapshot, ...sessionSnapshots];
+            db.saveSessionSnapshots(newSnapshots)
+                .then(() => {
+                    setSessionSnapshots(newSnapshots);
+                    closeAllPanels();
+                    addNotification(t('notifications.snapshotSaved', { name }), 'success');
+                })
+                .catch(err => console.error("Failed to save snapshots", err));
         }
-    }, [addNotification, article, currentTopic, messages, relatedTopics, setSessionSnapshots, closeAllPanels, t]);
+    }, [addNotification, article, currentTopic, messages, relatedTopics, sessionSnapshots, closeAllPanels, t]);
 
     const toggleArticleCompletion = useCallback((pathName: string, articleTitle: string) => {
-        setLearningPaths(paths => paths.map(path => {
+        const newPaths = learningPaths.map(path => {
             if (path.name === pathName) {
                 return {
                     ...path,
@@ -234,11 +233,12 @@ const useUserData = (
                 };
             }
             return path;
-        }));
-    }, [setLearningPaths]);
+        });
+        updateLearningPaths(newPaths);
+    }, [learningPaths, updateLearningPaths]);
     
     const reorderArticlesInPath = useCallback((pathName: string, startIndex: number, endIndex: number) => {
-        setLearningPaths(paths => paths.map(path => {
+        const newPaths = learningPaths.map(path => {
             if (path.name === pathName) {
                 const newArticles = Array.from(path.articles);
                 const [removed] = newArticles.splice(startIndex, 1);
@@ -246,35 +246,30 @@ const useUserData = (
                 return { ...path, articles: newArticles };
             }
             return path;
-        }));
-    }, [setLearningPaths]);
+        });
+        updateLearningPaths(newPaths);
+    }, [learningPaths, updateLearningPaths]);
 
     const removeArticleFromPath = useCallback((pathName: string, articleTitle: string) => {
-        setLearningPaths(paths => paths.map(path => {
+        const newPaths = learningPaths.map(path => {
             if (path.name === pathName) {
                 const initialLength = path.articles.length;
                 const newArticles = path.articles.filter(article => article.title !== articleTitle);
                 if (newArticles.length < initialLength) {
                     addNotification(t('notifications.articleRemovedFromPath', { articleTitle, pathName }), 'info');
                 }
-                return {
-                    ...path,
-                    articles: newArticles
-                };
+                return { ...path, articles: newArticles };
             }
             return path;
-        }));
-    }, [addNotification, setLearningPaths, t]);
+        });
+        updateLearningPaths(newPaths);
+    }, [addNotification, learningPaths, t, updateLearningPaths]);
 
     const addImageToLibrary = useCallback(async (imageData: { imageUrl: string; prompt: string; topic: string; }) => {
         const now = Date.now();
-        const newImage: StoredImage = {
-            id: now,
-            timestamp: now,
-            ...imageData,
-        };
+        const newImage: StoredImage = { id: now, timestamp: now, ...imageData };
         try {
-            await addImage(newImage);
+            await db.addImage(newImage);
             setImageLibrary(prev => [newImage, ...prev]);
         } catch (error) {
             addNotification(t('errors.dbSaveFailed'), 'error');
@@ -283,7 +278,7 @@ const useUserData = (
 
     const clearImageLibraryItem = useCallback(async (id: number) => {
         try {
-            await deleteImage(id);
+            await db.deleteImage(id);
             setImageLibrary(prev => prev.filter(item => item.id !== id));
         } catch (error) {
             addNotification(t('errors.dbDeleteFailed'), 'error');
@@ -293,50 +288,102 @@ const useUserData = (
     const clearImageLibrary = useCallback(() => {
         const name = t('panels.imageLibrary.title');
         if (window.confirm(t('prompts.confirmClearAll', { name }))) {
-            clearImages().then(() => {
+            db.clearImages().then(() => {
                 setImageLibrary([]);
                 addNotification(t('notifications.clearedAll', { name }), 'info');
-            }).catch(() => {
-                addNotification(t('errors.dbClearFailed'), 'error');
-            });
-        }
-    }, [addNotification, t]);
-
-    const makeClearer = useCallback((setter: React.Dispatch<React.SetStateAction<any[]>>, name: string) => () => {
-        if (window.confirm(t('prompts.confirmClearAll', { name }))) {
-            setter([]);
-            addNotification(t('notifications.clearedAll', { name }), 'info');
+            }).catch(() => addNotification(t('errors.dbClearFailed'), 'error'));
         }
     }, [addNotification, t]);
     
-    const makeClearItem = useCallback(<T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, idProp: (item: T) => string | number) => (id: string | number) => {
-        setter(prev => prev.filter(item => idProp(item) !== id));
+    const clearHistory = useCallback(() => {
+        const name = t('panels.history.title');
+        if (window.confirm(t('prompts.confirmClearAll', { name }))) {
+            db.clearHistory().then(() => {
+                setHistory([]);
+                addNotification(t('notifications.clearedAll', { name }), 'info');
+            });
+        }
+    }, [addNotification, t]);
+
+    const clearHistoryItem = useCallback((topic: string) => {
+        db.deleteHistoryItem(topic).then(() => {
+            setHistory(prev => prev.filter(item => item !== topic));
+        });
     }, []);
+
+    const clearBookmarks = useCallback(() => {
+        const name = t('panels.bookmarks.title');
+        if (window.confirm(t('prompts.confirmClearAll', { name }))) {
+            db.clearBookmarks().then(() => {
+                setBookmarks([]);
+                addNotification(t('notifications.clearedAll', { name }), 'info');
+            });
+        }
+    }, [addNotification, t]);
+
+    const clearBookmarkItem = useCallback((topic: string) => {
+        db.deleteBookmark(topic).then(() => {
+            setBookmarks(prev => prev.filter(item => item !== topic));
+        });
+    }, []);
+
+    const clearLearningPaths = useCallback(() => {
+        const name = t('panels.learningPaths.title');
+         if (window.confirm(t('prompts.confirmClearAll', { name }))) {
+            db.clearLearningPaths().then(() => {
+                setLearningPaths([]);
+                addNotification(t('notifications.clearedAll', { name }), 'info');
+            });
+        }
+    }, [addNotification, t]);
 
     const clearLearningPathItem = useCallback((pathName: string) => {
         if (window.confirm(t('prompts.confirmDeletePath', { pathName }))) {
-            setLearningPaths(prev => {
-                const updatedPaths = prev.filter(p => p.name !== pathName);
-                if (updatedPaths.length < prev.length) {
-                    addNotification(t('notifications.pathDeleted', { pathName }), 'info');
-                }
-                return updatedPaths;
+            db.deleteLearningPath(pathName).then(() => {
+                 setLearningPaths(prev => prev.filter(p => p.name !== pathName));
+                 addNotification(t('notifications.pathDeleted', { pathName }), 'info');
             });
         }
-    }, [addNotification, setLearningPaths, t]);
+    }, [addNotification, t]);
+    
+    const clearSnapshots = useCallback(() => {
+        const name = t('panels.snapshots.title');
+        if (window.confirm(t('prompts.confirmClearAll', { name }))) {
+            db.clearSessionSnapshots().then(() => {
+                setSessionSnapshots([]);
+                addNotification(t('notifications.clearedAll', { name }), 'info');
+            });
+        }
+    }, [addNotification, t]);
+
+    const clearSnapshot = useCallback((name: string) => {
+        db.deleteSessionSnapshot(name).then(() => {
+            setSessionSnapshots(prev => prev.filter(item => item.name !== name));
+        });
+    }, []);
 
     const handleExportData = useCallback(async () => {
-        const imagesFromDb = await getAllImages();
-        const backupData: CodexBackupData = { settings, history, bookmarks, learningPaths, sessionSnapshots, imageLibrary: imagesFromDb };
-        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `codex_backup_${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        addNotification(t('notifications.exportSuccess'), 'success');
-    }, [settings, history, bookmarks, learningPaths, sessionSnapshots, addNotification, t]);
+        try {
+            const settings = await db.getSettings(defaultSettings);
+            const history = await db.getHistory();
+            const bookmarks = await db.getBookmarks();
+            const learningPaths = await db.getLearningPaths();
+            const sessionSnapshots = await db.getSessionSnapshots();
+            const imagesFromDb = await db.getAllImages();
+            
+            const backupData: CodexBackupData = { settings, history, bookmarks, learningPaths, sessionSnapshots, imageLibrary: imagesFromDb };
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `codex_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            addNotification(t('notifications.exportSuccess'), 'success');
+        } catch (error) {
+             addNotification('Failed to export data.', 'error');
+        }
+    }, [addNotification, t]);
 
     const handleImportData = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -352,23 +399,21 @@ const useUserData = (
                 if (!data.settings || !Array.isArray(data.history)) {
                     throw new Error(t('errors.invalidBackup'));
                 }
-
-                setSettings(data.settings);
-                setHistory(data.history);
-                setBookmarks(data.bookmarks);
-                setLearningPaths(data.learningPaths);
-                setSessionSnapshots(data.sessionSnapshots);
                 
-                await clearImages();
-                if (data.imageLibrary && Array.isArray(data.imageLibrary)) {
-                    await bulkAddImages(data.imageLibrary);
-                    const sortedImages = data.imageLibrary.sort((a, b) => b.timestamp - a.timestamp);
-                    setImageLibrary(sortedImages);
-                } else {
-                    setImageLibrary([]);
-                }
+                // Clear old data and save new data
+                await Promise.all([
+                    db.saveSettings(data.settings),
+                    db.clearHistory().then(() => Promise.all(data.history.map(db.addHistoryItem))),
+                    db.clearBookmarks().then(() => Promise.all(data.bookmarks.map(db.addBookmark))),
+                    db.saveLearningPaths(data.learningPaths || []),
+                    db.saveSessionSnapshots(data.sessionSnapshots || []),
+                    db.clearImages().then(() => db.bulkAddImages(data.imageLibrary || []))
+                ]);
+                
+                // Force a reload to fetch new data from DB
+                addNotification(t('notifications.importSuccess') + ' Reloading...', 'success');
+                setTimeout(() => window.location.reload(), 1500);
 
-                addNotification(t('notifications.importSuccess'), 'success');
             } catch (error) {
                 console.error("Import failed:", error);
                 addNotification(error instanceof Error ? error.message : t('errors.importFailed'), 'error');
@@ -379,34 +424,23 @@ const useUserData = (
             }
         };
         reader.readAsText(file);
-    }, [addNotification, setSettings, setHistory, setBookmarks, setLearningPaths, setSessionSnapshots, t]);
+    }, [addNotification, t]);
 
     return useMemo(() => ({
-        history, bookmarks, learningPaths, sessionSnapshots, imageLibrary, setHistory,
+        history, bookmarks, learningPaths, sessionSnapshots, imageLibrary, 
+        setHistory,
         toggleBookmark, handleAddToPath, handleCreatePath, handleSaveSnapshot, addImageToLibrary,
-        clearHistory: makeClearer(setHistory, t('panels.history.title')),
-        clearBookmarks: makeClearer(setBookmarks, t('panels.bookmarks.title')),
-        clearLearningPaths: makeClearer(setLearningPaths, t('panels.learningPaths.title')),
-        clearSnapshots: makeClearer(setSessionSnapshots, t('panels.snapshots.title')),
-        clearImageLibrary,
-        clearHistoryItem: makeClearItem(setHistory, item => item),
-        clearBookmarkItem: makeClearItem(setBookmarks, item => item),
-        clearLearningPathItem,
-        clearSnapshot: makeClearItem(setSessionSnapshots, item => item.name),
-        clearImageLibraryItem,
-        handleExportData,
-        handleImportData,
-        handleTriggerImport,
-        toggleArticleCompletion,
-        reorderArticlesInPath,
-        removeArticleFromPath,
+        clearHistory, clearBookmarks, clearLearningPaths, clearSnapshots, clearImageLibrary,
+        clearHistoryItem, clearBookmarkItem, clearLearningPathItem, clearSnapshot, clearImageLibraryItem,
+        handleExportData, handleImportData, handleTriggerImport,
+        toggleArticleCompletion, reorderArticlesInPath, removeArticleFromPath,
     }), [
         history, bookmarks, learningPaths, sessionSnapshots, imageLibrary, setHistory,
         toggleBookmark, handleAddToPath, handleCreatePath, handleSaveSnapshot, addImageToLibrary, 
-        makeClearer, setBookmarks, setLearningPaths, setSessionSnapshots,
-        makeClearItem, handleExportData, handleImportData, handleTriggerImport,
+        clearHistory, clearBookmarks, clearLearningPaths, clearSnapshots, clearImageLibrary,
+        clearHistoryItem, clearBookmarkItem, clearLearningPathItem, clearSnapshot, clearImageLibraryItem,
+        handleExportData, handleImportData, handleTriggerImport,
         toggleArticleCompletion, reorderArticlesInPath, removeArticleFromPath,
-        clearLearningPathItem, t, clearImageLibrary, clearImageLibraryItem
     ]);
 };
 
@@ -542,9 +576,14 @@ const MobileHeaderMenu = ({ togglePanel, setCommandPaletteOpen }: { togglePanel:
     );
 };
 
-
-function CodexApp() {
-  const [hasStarted, setHasStarted] = useLocalStorage('codex-has-started', false);
+interface InitialUserData {
+    history: string[];
+    bookmarks: string[];
+    learningPaths: LearningPath[];
+    sessionSnapshots: SessionSnapshot[];
+    imageLibrary: StoredImage[];
+}
+function CodexApp({ initialUserData }: { initialUserData: InitialUserData }) {
   const [currentTopic, setCurrentTopic] = useState<string>('');
   const [article, setArticle] = useState<ArticleData | null>(null);
   const [relatedTopics, setRelatedTopics] = useState<RelatedTopic[]>([]);
@@ -565,17 +604,13 @@ function CodexApp() {
   const { settings, setSettings } = useContext(SettingsContext)!;
   const { addNotification } = useNotification();
   const { locale, t } = useLocalization();
-
   const importFileRef = useRef<HTMLInputElement>(null);
   
   const closeAllPanels = useCallback(() => setActivePanel(null), []);
-
-  const handleTriggerImport = () => {
-      importFileRef.current?.click();
-  };
+  const handleTriggerImport = () => importFileRef.current?.click();
   
   const userData = useUserData(
-      settings, setSettings, article, currentTopic, messages, relatedTopics, closeAllPanels, handleTriggerImport
+      initialUserData, article, currentTopic, messages, relatedTopics, closeAllPanels, handleTriggerImport
   );
   
   const { history, bookmarks, imageLibrary, addImageToLibrary } = userData;
@@ -649,7 +684,9 @@ function CodexApp() {
         setRelatedTopics(relatedTopicsData);
         
         if (!history.includes(topic)) {
-            userData.setHistory(prev => [topic, ...prev].slice(0, 100));
+            db.addHistoryItem(topic).then(() => {
+                userData.setHistory(prev => [topic, ...prev].slice(0, 100));
+            });
         }
 
     } catch (error: any) {
@@ -838,8 +875,8 @@ function CodexApp() {
       addNotification(t('notifications.snapshotRestored', { name: snapshot.name }), 'success');
   }, [closeAllPanels, addNotification, t]);
 
-  if (!hasStarted) {
-    return <EntryPortal onStart={() => setHasStarted(true)} />;
+  if (!settings.hasOnboarded) {
+    return <EntryPortal onStart={() => setSettings(prev => ({...prev, hasOnboarded: true}))} />;
   }
   
   return (
@@ -1028,12 +1065,57 @@ function CodexApp() {
   );
 }
 
+interface InitialDbData {
+    settings: AppSettings;
+    history: string[];
+    bookmarks: string[];
+    learningPaths: LearningPath[];
+    sessionSnapshots: SessionSnapshot[];
+    imageLibrary: StoredImage[];
+}
+
 function App() {
+  const [initialDbData, setInitialDbData] = useState<InitialDbData | null>(null);
+
+  useEffect(() => {
+    async function loadData() {
+        try {
+            const [settings, history, bookmarks, learningPaths, sessionSnapshots, imageLibrary] = await Promise.all([
+                db.getSettings(defaultSettings),
+                db.getHistory(),
+                db.getBookmarks(),
+                db.getLearningPaths(),
+                db.getSessionSnapshots(),
+                db.getAllImages()
+            ]);
+            setInitialDbData({ settings, history, bookmarks, learningPaths, sessionSnapshots, imageLibrary });
+        } catch (error) {
+            console.error("Failed to load data from IndexedDB", error);
+            // Load with defaults if DB fails
+            setInitialDbData({
+                settings: defaultSettings,
+                history: [], bookmarks: [], learningPaths: [], sessionSnapshots: [], imageLibrary: []
+            });
+        }
+    }
+    loadData();
+  }, []);
+
+  if (!initialDbData) {
+    return (
+        <div className="flex items-center justify-center h-screen bg-gray-900">
+            <LoadingSpinner text="Initializing Codex..." />
+        </div>
+    );
+  }
+
+  const { settings, ...initialUserData } = initialDbData;
+
   return (
-    <SettingsProvider>
+    <SettingsProvider initialSettings={settings}>
       <LocalizationProvider>
         <NotificationProvider>
-            <CodexApp />
+            <CodexApp initialUserData={initialUserData} />
         </NotificationProvider>
       </LocalizationProvider>
     </SettingsProvider>

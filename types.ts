@@ -128,6 +128,7 @@ export interface AppSettings {
     imageStyle: ImageStyle;
     autoLoadImages: boolean;
     synapseDensity: number;
+    hasOnboarded?: boolean;
 }
 
 // Context Types
