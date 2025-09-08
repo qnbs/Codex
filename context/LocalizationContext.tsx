@@ -41,6 +41,7 @@ const enDefault = {
         "learnMore": "Learn more →",
         "generate": "Generate",
         "generateImage": "Generate Image",
+        "generateVideo": "Generate Video",
         "generatingImage": "Generating image...",
         "editingImage": "Editing image...",
         "imagePrompt": "Image Prompt",
@@ -61,6 +62,18 @@ const enDefault = {
             "title": "Edit Image with AI",
             "promptLabel": "Describe your changes:",
             "placeholder": "e.g., make it nighttime, add a cat..."
+        },
+        "video": {
+            "loadingMessages": [
+                "Initializing video synthesis...",
+                "Compositing frames...",
+                "This may take a few minutes...",
+                "Rendering final output...",
+                "Almost there..."
+            ],
+            "status": {
+                "start": "Starting video generation..."
+            }
         }
     },
     "summary": {
@@ -128,7 +141,8 @@ const enDefault = {
         "imageLibrary": {
             "title": "Image Library",
             "sourceArticle": "Source Article",
-            "confirmDelete": "Are you sure you want to permanently delete this image?"
+            "confirmDelete": "Are you sure you want to permanently delete this image?",
+            "editedPrompt": "(Edit) {{editPrompt}} -- Original: {{originalPrompt}}"
         },
         "settings": {
             "title": "Settings"
@@ -360,6 +374,7 @@ const enDefault = {
         "allImagesGenerated": "All images have already been generated.",
         "imagesGeneratedSuccess": "{{count}} image(s) successfully generated.",
         "imageEditedSuccess": "Image edited successfully!",
+        "videoGeneratedSuccess": "Video generated successfully!",
         "findingConnection": "Finding a surprising connection...",
         "cosmicLeapFound": "Cosmic Leap found: {{topic}}",
         "snapshotRestored": "Restored snapshot \"{{name}}\"."
@@ -370,6 +385,8 @@ const enDefault = {
         "imageGenerationFailed": "Could not generate image.",
         "imageEditFailed": "Failed to edit image.",
         "imageGenSectionFailed": "Could not generate image for \"{{section}}\".",
+        "videoGenerationFailed": "Video generation failed.",
+        "noPromptForVideo": "This section does not have a prompt for video generation.",
         "cosmicLeapFailed": "Could not find a topic for a cosmic leap.",
         "fileRead": "File could not be read",
         "invalidBackup": "Invalid backup file structure.",

@@ -1,6 +1,5 @@
 
 
-// FIX: Import `GenerateImagesResponse` type.
 import { GoogleGenAI, Type, GenerateContentResponse, Chat, Modality, GenerateImagesResponse } from "@google/genai";
 import { ArticleData, RelatedTopic, ChatMessage, StarterTopic, AppSettings, SummaryType, Locale } from '../types';
 import { Prompts } from './prompts';
@@ -172,7 +171,6 @@ export const generateImageForSection = async (prompt: string, settings: AppSetti
     if (!prompt) return '';
     try {
         const fullPrompt = constructImagePrompt(prompt, settings, locale);
-        // FIX: Explicitly specify the `GenerateImagesResponse` type for the API call response.
         const response = await callGeminiWithRetry<GenerateImagesResponse>(() => ai.models.generateImages({
             model: 'imagen-4.0-generate-001',
             prompt: fullPrompt,
