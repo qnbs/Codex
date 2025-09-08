@@ -1,11 +1,10 @@
-
 import React, { useState, useCallback, useEffect, useRef, useContext, useMemo } from 'react';
 import SearchBar from './components/SearchBar';
 import ArticleView from './components/ArticleView';
 import AthenaCopilot from './components/AthenaCopilot';
 import SynapseGraph from './components/SynapseGraph';
 import { ArticleData, RelatedTopic, StarterTopic, AppSettings, AccentColor, FontFamily, ArticleLength, ImageStyle, TextSize, LearningPath, SessionSnapshot, ChatMessage, CodexBackupData, Notification, NotificationType, Language, UserDataContextType, StoredImage } from './types';
-import { generateArticleContent, getRelatedTopics, generateImageForSection, getSerendipitousTopic, getStarterTopics, startChat, editImage } from './services/geminiService';
+import { generateArticleContent, getRelatedTopics, generateImageForSection, getSerendipitousTopic, getStarterTopics, startChat, editImage, generateVideoForSection } from './services/geminiService';
 import { addImage, getAllImages, deleteImage, clearImages, bulkAddImages } from './services/dbService';
 import { HistoryIcon, BookmarkIcon, CogIcon, CloseIcon, PathIcon, CameraIcon, TrashIcon, UploadIcon, DownloadIcon, QuestionMarkCircleIcon, SparklesIcon, CommandIcon, ImageIcon, SearchIcon, MoreVerticalIcon } from './components/IconComponents';
 import SettingsModal from './components/SettingsModal';
@@ -556,6 +555,7 @@ function CodexApp() {
   const [generatingImages, setGeneratingImages] = useState<number[]>([]);
   const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
   const [imageQueue, setImageQueue] = useState<number[]>([]);
+  const [generatingVideoInfo, setGeneratingVideoInfo] = useState<{ index: number | null, status: string | null }>({ index: null, status: null });
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chat, setChat] = useState<Chat | null>(null);
@@ -741,6 +741,37 @@ function CodexApp() {
         }
     }, [article, locale, addNotification, t, addImageToLibrary]);
 
+    const handleGenerateVideo = useCallback(async (sectionIndex: number) => {
+        if (!article || generatingVideoInfo.index !== null) return;
+        
+        const prompt = article.sections[sectionIndex].imagePrompt;
+        if (!prompt) {
+            addNotification(t('errors.noPromptForVideo'), 'error');
+            return;
+        }
+
+        setGeneratingVideoInfo({ index: sectionIndex, status: t('article.video.status.start') });
+        try {
+            const videoUrl = await generateVideoForSection(prompt, settings, locale, (status) => {
+                setGeneratingVideoInfo({ index: sectionIndex, status });
+            });
+
+            setArticle(prevArticle => {
+                if (!prevArticle) return null;
+                const newSections = [...prevArticle.sections];
+                newSections[sectionIndex] = { ...newSections[sectionIndex], videoUrl };
+                return { ...prevArticle, sections: newSections };
+            });
+
+            addNotification(t('notifications.videoGeneratedSuccess'), 'success');
+
+        } catch (error: any) {
+            addNotification(error.message || t('errors.videoGenerationFailed'), 'error');
+        } finally {
+            setGeneratingVideoInfo({ index: null, status: null });
+        }
+    }, [article, generatingVideoInfo.index, settings, locale, addNotification, t]);
+
   useEffect(() => {
     if (generatingImages.length > 0 || imageQueue.length === 0) {
         return;
@@ -862,7 +893,9 @@ function CodexApp() {
                           onTopicClick={handleSearch}
                           onGenerateImage={handleGenerateImage}
                           onGenerateAllImages={handleGenerateAllImages}
+                          onGenerateVideo={handleGenerateVideo}
                           generatingImages={generatingImages}
+                          generatingVideoInfo={generatingVideoInfo}
                           onEditImage={handleEditImage}
                           editingImageIndex={editingImageIndex}
                           fullArticleText={fullArticleText}

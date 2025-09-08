@@ -36,6 +36,7 @@
         "learnMore": "Mehr erfahren →",
         "generate": "Generieren",
         "generateImage": "Bild generieren",
+        "generateVideo": "Video generieren",
         "generatingImage": "Generiere Bild...",
         "editingImage": "Bearbeite Bild...",
         "imagePrompt": "Bild-Prompt",
@@ -56,6 +57,18 @@
             "title": "Bild mit KI bearbeiten",
             "promptLabel": "Beschreiben Sie Ihre Änderungen:",
             "placeholder": "z. B. mache es Nacht, füge eine Katze hinzu..."
+        },
+        "video": {
+            "loadingMessages": [
+                "Initialisiere Videosynthese...",
+                "Kompositiere Frames...",
+                "Dies kann einige Minuten dauern...",
+                "Rendere finale Ausgabe...",
+                "Fast geschafft..."
+            ],
+            "status": {
+                "start": "Starte Videogenerierung..."
+            }
         }
     },
     "summary": {
@@ -355,6 +368,7 @@
         "allImagesGenerated": "Alle Bilder wurden bereits generiert.",
         "imagesGeneratedSuccess": "{{count}} Bild(er) erfolgreich generiert.",
         "imageEditedSuccess": "Bild erfolgreich bearbeitet!",
+        "videoGeneratedSuccess": "Video erfolgreich generiert!",
         "findingConnection": "Suche nach einer überraschenden Verbindung...",
         "cosmicLeapFound": "Kosmischer Sprung gefunden: {{topic}}",
         "snapshotRestored": "Schnappschuss \"{{name}}\" wiederhergestellt."
@@ -365,6 +379,8 @@
         "imageGenerationFailed": "Konnte kein Bild generieren.",
         "imageEditFailed": "Bildbearbeitung fehlgeschlagen.",
         "imageGenSectionFailed": "Konnte kein Bild für \"{{section}}\" generieren.",
+        "videoGenerationFailed": "Videogenerierung fehlgeschlagen.",
+        "noPromptForVideo": "Dieser Abschnitt hat keinen Prompt für die Videogenerierung.",
         "cosmicLeapFailed": "Konnte kein Thema für einen kosmischen Sprung finden.",
         "fileRead": "Datei konnte nicht gelesen werden",
         "invalidBackup": "Ungültige Backup-Dateistruktur.",

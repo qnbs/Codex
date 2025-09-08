@@ -18,6 +18,7 @@ export interface ArticleSection {
   content: string;
   imagePrompt?: string;
   imageUrl?: string;
+  videoUrl?: string;
 }
 
 export interface ArticleData {

@@ -1,4 +1,3 @@
-
 // FIX: Add GenerateImagesResponse type for generateImages API call.
 import { GoogleGenAI, Type, GenerateContentResponse, Chat, GenerateImagesResponse, Modality } from "@google/genai";
 import { ArticleData, RelatedTopic, ChatMessage, StarterTopic, AppSettings, SummaryType, Locale } from '../types';
@@ -194,6 +193,49 @@ export const generateImageForSection = async (prompt: string, settings: AppSetti
         throw new Error(finalMessage);
     }
 }
+
+export const generateVideoForSection = async (
+    prompt: string,
+    settings: AppSettings,
+    locale: Locale,
+    onStatusUpdate: (status: string) => void
+): Promise<string> => {
+    if (!prompt) return '';
+    try {
+        const fullPrompt = constructImagePrompt(prompt, settings, locale);
+        onStatusUpdate(locale === 'de' ? 'Starte Videogenerierung...' : 'Starting video generation...');
+        let operation = await ai.models.generateVideos({
+            model: 'veo-2.0-generate-001',
+            prompt: fullPrompt,
+            config: { numberOfVideos: 1 }
+        });
+
+        onStatusUpdate(locale === 'de' ? 'Warte auf Verarbeitung...' : 'Awaiting processing...');
+        while (!operation.done) {
+            await new Promise(resolve => setTimeout(resolve, 10000));
+            onStatusUpdate(locale === 'de' ? 'Überprüfe Status...' : 'Checking status...');
+            operation = await ai.operations.getVideosOperation({ operation: operation });
+        }
+        
+        onStatusUpdate(locale === 'de' ? 'Video-Download...' : 'Downloading video...');
+        const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+        if (!downloadLink) {
+            throw new Error(locale === 'de' ? 'Kein Video-Download-Link erhalten.' : 'No video download link received.');
+        }
+
+        const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+        if (!response.ok) {
+            throw new Error(locale === 'de' ? `Fehler beim Abrufen des Videos: ${response.statusText}` : `Failed to fetch video: ${response.statusText}`);
+        }
+        const videoBlob = await response.blob();
+        return URL.createObjectURL(videoBlob);
+
+    } catch(error) {
+        console.error('Error generating video for prompt "', prompt, '":', error);
+        const message = locale === 'de' ? 'Videogenerierung fehlgeschlagen.' : 'Video generation failed.';
+        throw new Error(message);
+    }
+};
 
 export const getRelatedTopics = async (topic: string, settings: AppSettings, locale: Locale): Promise<RelatedTopic[]> => {
     try {

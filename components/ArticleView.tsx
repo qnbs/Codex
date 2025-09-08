@@ -1,7 +1,6 @@
-
 import React, { useState, useRef, useEffect, useMemo, useContext, useCallback } from 'react';
 import { ArticleData, StarterTopic, AppSettings, TextSize, SummaryType, TimelineEvent } from '../types';
-import { BookOpenIcon, SparklesIcon, TextSelectIcon, WandIcon, ImageIcon, CloseIcon, ClockIcon, ReloadIcon, ClipboardCopyIcon, TimelineIcon, SummarizeIcon, KeyPointsIcon, Eli5Icon, AnalogyIcon, PathIcon, PlusIcon, BookmarkIcon } from './IconComponents';
+import { BookOpenIcon, SparklesIcon, TextSelectIcon, WandIcon, ImageIcon, CloseIcon, ClockIcon, ReloadIcon, ClipboardCopyIcon, TimelineIcon, SummarizeIcon, KeyPointsIcon, Eli5Icon, AnalogyIcon, PathIcon, PlusIcon, BookmarkIcon, VideoCameraIcon } from './IconComponents';
 import LoadingSpinner from './LoadingSpinner';
 import { explainOrDefine, generateSummary, constructImagePrompt } from '../services/geminiService';
 import { SettingsContext, UserDataContext } from '../context/AppContext';
@@ -32,21 +31,52 @@ const WelcomeScreen = React.memo(({ starterTopics, onTopicClick, isLoadingTopics
     );
 });
 
-interface ImageDisplayProps {
+interface MediaDisplayProps {
     imageUrl?: string;
+    videoUrl?: string;
     prompt?: string;
-    onGenerate: () => void;
-    isGenerating: boolean;
+    onGenerateImage: () => void;
+    onGenerateVideo: () => void;
+    isGeneratingImage: boolean;
+    generatingVideoInfo: { index: number | null, status: string | null };
     onEdit: (prompt: string) => void;
     isEditing: boolean;
 }
 
-const ImageDisplay = ({ imageUrl, prompt, onGenerate, isGenerating, onEdit, isEditing }: ImageDisplayProps) => {
+const MediaDisplay = ({ imageUrl, videoUrl, prompt, onGenerateImage, onGenerateVideo, isGeneratingImage, generatingVideoInfo, onEdit, isEditing }: MediaDisplayProps) => {
     const { settings } = useContext(SettingsContext)!;
     const { locale, t } = useLocalization();
     const [isCopied, setIsCopied] = useState(false);
     const [showEditUI, setShowEditUI] = useState(false);
     const [editPrompt, setEditPrompt] = useState('');
+    const [videoStatusMessage, setVideoStatusMessage] = useState('');
+    const isGeneratingVideo = generatingVideoInfo.index !== null;
+
+    const videoLoadingMessages: string[] = t('article.video.loadingMessages');
+
+    useEffect(() => {
+        let intervalId: number;
+        if (isGeneratingVideo) {
+            // Set initial message from the hook
+            setVideoStatusMessage(generatingVideoInfo.status || videoLoadingMessages[0]);
+            
+            // Cycle through generic messages
+            let messageIndex = 0;
+            intervalId = window.setInterval(() => {
+                messageIndex = (messageIndex + 1) % videoLoadingMessages.length;
+                setVideoStatusMessage(videoLoadingMessages[messageIndex]);
+            }, 3000);
+        }
+        return () => clearInterval(intervalId);
+    }, [isGeneratingVideo, videoLoadingMessages]);
+
+    // Update message when a new specific status comes from the hook
+    useEffect(() => {
+        if (isGeneratingVideo && generatingVideoInfo.status) {
+            setVideoStatusMessage(generatingVideoInfo.status);
+        }
+    }, [generatingVideoInfo.status, isGeneratingVideo]);
+
 
     if (!prompt) return null;
 
@@ -67,15 +97,13 @@ const ImageDisplay = ({ imageUrl, prompt, onGenerate, isGenerating, onEdit, isEd
             setEditPrompt('');
         }
     };
-
-    return (
-        <div className="relative w-full aspect-video bg-gray-800 rounded-lg my-6 flex items-center justify-center overflow-hidden group">
-             {isEditing && (
-                <div className="absolute inset-0 bg-gray-900/80 z-20 flex items-center justify-center">
-                    <LoadingSpinner text={t('article.editingImage')} />
-                </div>
-            )}
-            {imageUrl ? (
+    
+    const renderContent = () => {
+        if (videoUrl) {
+            return <video src={videoUrl} controls className="w-full h-full object-cover" />;
+        }
+        if (imageUrl) {
+            return (
                 <>
                     <img src={imageUrl} alt={prompt} className="w-full h-full object-cover" />
                     {!isEditing && !showEditUI && (
@@ -111,30 +139,50 @@ const ImageDisplay = ({ imageUrl, prompt, onGenerate, isGenerating, onEdit, isEd
                         </div>
                     )}
                 </>
-            ) : isGenerating ? (
-                <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-                    <LoadingSpinner text={t('article.generatingImage')} />
+            );
+        }
+        if (isGeneratingVideo) {
+            return <LoadingSpinner text={videoStatusMessage} />;
+        }
+        if (isGeneratingImage) {
+            return <LoadingSpinner text={t('article.generatingImage')} />;
+        }
+        return (
+             <div className="w-full h-full bg-gray-700/50 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center p-4">
+                <div className="w-full text-left">
+                     <div className="flex justify-between items-center">
+                         <p className="text-xs text-gray-400 font-semibold uppercase">{t('article.imagePrompt')}</p>
+                         <button onClick={handleCopy} className="flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 transition-transform active:scale-95">
+                             <ClipboardCopyIcon className="w-3.5 h-3.5" isCopied={isCopied} />
+                             {isCopied ? t('common.copied') : t('common.copy')}
+                         </button>
+                     </div>
+                     <p className="text-sm text-gray-300 mt-2 font-mono bg-gray-900/50 p-2 rounded-md">
+                        <span className="text-gray-400">{prompt}, </span><span className="text-amber-300/80">{styleModifiers}</span>
+                     </p>
                 </div>
-            ) : (
-                 <div className="w-full h-full bg-gray-700/50 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center p-4">
-                    <div className="w-full text-left">
-                         <div className="flex justify-between items-center">
-                             <p className="text-xs text-gray-400 font-semibold uppercase">{t('article.imagePrompt')}</p>
-                             <button onClick={handleCopy} className="flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 transition-transform active:scale-95">
-                                 <ClipboardCopyIcon className="w-3.5 h-3.5" isCopied={isCopied} />
-                                 {isCopied ? t('common.copied') : t('common.copy')}
-                             </button>
-                         </div>
-                         <p className="text-sm text-gray-300 mt-2 font-mono bg-gray-900/50 p-2 rounded-md">
-                            <span className="text-gray-400">{prompt}, </span><span className="text-amber-300/80">{styleModifiers}</span>
-                         </p>
-                    </div>
-                     <button onClick={onGenerate} className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-contrast text-sm font-semibold rounded-full hover:bg-accent-hover transition-all transform active:scale-95 disabled:bg-gray-600">
+                 <div className="flex items-center gap-4 mt-4">
+                    <button onClick={onGenerateImage} className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-contrast text-sm font-semibold rounded-full hover:bg-accent-hover transition-all transform active:scale-95 disabled:bg-gray-600">
                         <ImageIcon className="w-5 h-5" />
                         {t('article.generateImage')}
                     </button>
+                    <button onClick={onGenerateVideo} className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white text-sm font-semibold rounded-full hover:bg-rose-500 transition-all transform active:scale-95 disabled:bg-gray-600">
+                        <VideoCameraIcon className="w-5 h-5" />
+                        {t('article.generateVideo')}
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div className="relative w-full aspect-video bg-gray-800 rounded-lg my-6 flex items-center justify-center overflow-hidden group">
+             {isEditing && (
+                <div className="absolute inset-0 bg-gray-900/80 z-20 flex items-center justify-center">
+                    <LoadingSpinner text={t('article.editingImage')} />
                 </div>
             )}
+            {renderContent()}
         </div>
     );
 };
@@ -385,14 +433,16 @@ interface ArticleViewProps {
   onTopicClick: (topic: string) => void;
   onGenerateImage: (sectionIndex: number) => void;
   onGenerateAllImages: () => void;
+  onGenerateVideo: (sectionIndex: number) => void;
   generatingImages: number[];
+  generatingVideoInfo: { index: number | null, status: string | null };
   onEditImage: (sectionIndex: number, prompt: string) => void;
   editingImageIndex: number | null;
   fullArticleText: string;
   isBookmarked: boolean;
 }
 
-const ArticleView: React.FC<ArticleViewProps> = ({ article, isLoading, error, onRetry, starterTopics, isLoadingTopics, onTopicClick, onGenerateImage, onGenerateAllImages, generatingImages, onEditImage, editingImageIndex, fullArticleText, isBookmarked }) => {
+const ArticleView: React.FC<ArticleViewProps> = ({ article, isLoading, error, onRetry, starterTopics, isLoadingTopics, onTopicClick, onGenerateImage, onGenerateAllImages, onGenerateVideo, generatingImages, generatingVideoInfo, onEditImage, editingImageIndex, fullArticleText, isBookmarked }) => {
     const { settings } = useContext(SettingsContext)!;
     const { toggleBookmark } = useContext(UserDataContext)!;
     const { t } = useLocalization();
@@ -519,11 +569,14 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, isLoading, error, on
                     <section key={index}>
                         <h2>{section.heading}</h2>
                         <p>{section.content}</p>
-                        <ImageDisplay
+                        <MediaDisplay
                             imageUrl={section.imageUrl}
+                            videoUrl={section.videoUrl}
                             prompt={section.imagePrompt}
-                            onGenerate={() => onGenerateImage(index)}
-                            isGenerating={generatingImages.includes(index)}
+                            onGenerateImage={() => onGenerateImage(index)}
+                            onGenerateVideo={() => onGenerateVideo(index)}
+                            isGeneratingImage={generatingImages.includes(index)}
+                            generatingVideoInfo={generatingVideoInfo.index === index ? generatingVideoInfo : { index: null, status: null }}
                             onEdit={(prompt) => onEditImage(index, prompt)}
                             isEditing={editingImageIndex === index}
                         />
