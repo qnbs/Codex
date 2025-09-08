@@ -1,5 +1,4 @@
 
-
 {
     "common": {
         "close": "Schließen",
@@ -241,6 +240,7 @@
             "clearBookmarks": "Lesezeichen löschen",
             "clearPaths": "Lernpfade löschen",
             "clearSnapshots": "Schnappschüsse löschen",
+            "clearImageLibrary": "Bilder-Bibliothek löschen",
             "export": "Alle Daten exportieren",
             "import": "Daten importieren"
         }

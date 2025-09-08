@@ -244,6 +244,7 @@ const enDefault = {
             "clearBookmarks": "Clear Bookmarks",
             "clearPaths": "Clear Learning Paths",
             "clearSnapshots": "Clear Snapshots",
+            "clearImageLibrary": "Clear Image Library",
             "export": "Export All Data",
             "import": "Import Data"
         }

@@ -22,7 +22,7 @@ const SettingRow = ({ label, description, children }: { label: string, descripti
 const SettingsModal: React.FC<SettingsModalProps> = ({ isVisible, onClose }) => {
     const { settings, setSettings } = useContext(SettingsContext)!;
     const { 
-        clearHistory, clearBookmarks, clearLearningPaths, clearSnapshots,
+        clearHistory, clearBookmarks, clearLearningPaths, clearSnapshots, clearImageLibrary,
         handleExportData, handleTriggerImport
     } = useContext(UserDataContext)!;
     const { t } = useLocalization();
@@ -186,6 +186,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isVisible, onClose }) => 
                                 </button>
                                 <button onClick={clearSnapshots} className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-red-600/20 text-red-300 border border-red-500/30 rounded-lg hover:bg-red-600/40 transition-colors">
                                     <TrashIcon className="w-5 h-5" /> {t('settings.data.clearSnapshots')}
+                                </button>
+                                <button onClick={clearImageLibrary} className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-red-600/20 text-red-300 border border-red-500/30 rounded-lg hover:bg-red-600/40 transition-colors">
+                                    <TrashIcon className="w-5 h-5" /> {t('settings.data.clearImageLibrary')}
                                 </button>
                             </div>
                              <div className="mt-6 pt-4 border-t border-gray-700/50 flex flex-col md:flex-row gap-4">
