@@ -1,10 +1,11 @@
+
 import React, { useState, useCallback, useEffect, useRef, useContext, useMemo } from 'react';
 import SearchBar from './components/SearchBar';
 import ArticleView from './components/ArticleView';
 import AthenaCopilot from './components/AthenaCopilot';
 import SynapseGraph from './components/SynapseGraph';
 import { ArticleData, RelatedTopic, StarterTopic, AppSettings, AccentColor, FontFamily, ArticleLength, ImageStyle, TextSize, LearningPath, SessionSnapshot, ChatMessage, CodexBackupData, Notification, NotificationType, Language, UserDataContextType, StoredImage } from './types';
-import { generateArticleContent, getRelatedTopics, generateImageForSection, getSerendipitousTopic, getStarterTopics, startChat } from './services/geminiService';
+import { generateArticleContent, getRelatedTopics, generateImageForSection, getSerendipitousTopic, getStarterTopics, startChat, editImage } from './services/geminiService';
 import { addImage, getAllImages, deleteImage, clearImages, bulkAddImages } from './services/dbService';
 import { HistoryIcon, BookmarkIcon, CogIcon, CloseIcon, PathIcon, CameraIcon, TrashIcon, UploadIcon, DownloadIcon, QuestionMarkCircleIcon, SparklesIcon, CommandIcon, ImageIcon, SearchIcon, MoreVerticalIcon } from './components/IconComponents';
 import SettingsModal from './components/SettingsModal';
@@ -485,31 +486,59 @@ const MemoizedHeaderPanel = React.memo(HeaderPanel);
 
 const MobileHeaderMenu = ({ togglePanel, setCommandPaletteOpen }: { togglePanel: (panel: string) => void, setCommandPaletteOpen: (isOpen: boolean) => void }) => {
     const { t } = useLocalization();
-    const menuItems = [
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    const menuItems = useMemo(() => [
         { id: 'commandPalette', title: t('commandPalette.open'), icon: CommandIcon, action: () => setCommandPaletteOpen(true) },
         { id: 'snapshots', title: t('panels.snapshots.title'), icon: CameraIcon, action: () => togglePanel('snapshots') },
         { id: 'help', title: t('panels.help.title'), icon: QuestionMarkCircleIcon, action: () => togglePanel('help') },
         { id: 'settings', title: t('panels.settings.title'), icon: CogIcon, action: () => togglePanel('settings') },
-    ];
+    ], [t, togglePanel, setCommandPaletteOpen]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsMenuOpen(false);
+            }
+        };
+        if (isMenuOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isMenuOpen]);
 
     return (
-        <div className="relative group md:hidden">
-            <button className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors">
+        <div className="relative md:hidden" ref={menuRef}>
+            <button
+                onClick={() => setIsMenuOpen(prev => !prev)}
+                className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors"
+                aria-haspopup="true"
+                aria-expanded={isMenuOpen}
+                aria-label={t('common.openMenu')}
+            >
                 <MoreVerticalIcon className="w-6 h-6" />
             </button>
-            <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-1 z-20 opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200">
-                {menuItems.map(item => (
-                    <button
-                        key={item.id}
-                        onClick={item.action}
-                        title={item.title}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left text-gray-300 rounded-md hover:bg-gray-700/80"
-                    >
-                        <item.icon className="w-5 h-5" />
-                        <span>{item.title}</span>
-                    </button>
-                ))}
-            </div>
+            {isMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 origin-top-right bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-1 z-20 animate-fade-in-down">
+                    {menuItems.map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => {
+                                item.action();
+                                setIsMenuOpen(false);
+                            }}
+                            title={item.title}
+                            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left text-gray-300 rounded-md hover:bg-gray-700/80"
+                        >
+                            <item.icon className="w-5 h-5" />
+                            <span>{item.title}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
@@ -525,6 +554,7 @@ function CodexApp() {
   const [starterTopics, setStarterTopics] = useState<StarterTopic[]>([]);
   const [isLoadingTopics, setIsLoadingTopics] = useState(true);
   const [generatingImages, setGeneratingImages] = useState<number[]>([]);
+  const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
   const [imageQueue, setImageQueue] = useState<number[]>([]);
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -681,6 +711,36 @@ function CodexApp() {
     });
   }, [article, generatingImages, imageQueue, addNotification, t]);
   
+    const handleEditImage = useCallback(async (sectionIndex: number, editPrompt: string) => {
+        if (!article || !article.sections[sectionIndex]?.imageUrl) return;
+
+        setEditingImageIndex(sectionIndex);
+        try {
+            const originalImageUrl = article.sections[sectionIndex].imageUrl!;
+            const newImageUrl = await editImage(originalImageUrl, editPrompt, locale);
+
+            addImageToLibrary({
+                imageUrl: newImageUrl,
+                prompt: `(Edit) ${editPrompt} -- Original: ${article.sections[sectionIndex].imagePrompt}`,
+                topic: article.title,
+            });
+            
+            setArticle(prevArticle => {
+                if (!prevArticle) return null;
+                const newSections = [...prevArticle.sections];
+                newSections[sectionIndex] = { ...newSections[sectionIndex], imageUrl: newImageUrl };
+                return { ...prevArticle, sections: newSections };
+            });
+
+            addNotification(t('notifications.imageEditedSuccess'), 'success');
+
+        } catch (error: any) {
+            addNotification(error.message || t('errors.imageEditFailed'), 'error');
+        } finally {
+            setEditingImageIndex(null);
+        }
+    }, [article, locale, addNotification, t, addImageToLibrary]);
+
   useEffect(() => {
     if (generatingImages.length > 0 || imageQueue.length === 0) {
         return;
@@ -803,6 +863,8 @@ function CodexApp() {
                           onGenerateImage={handleGenerateImage}
                           onGenerateAllImages={handleGenerateAllImages}
                           generatingImages={generatingImages}
+                          onEditImage={handleEditImage}
+                          editingImageIndex={editingImageIndex}
                           fullArticleText={fullArticleText}
                           isBookmarked={isBookmarked}
                        />

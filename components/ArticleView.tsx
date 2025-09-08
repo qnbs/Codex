@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useMemo, useContext, useCallback } from 'react';
 import { ArticleData, StarterTopic, AppSettings, TextSize, SummaryType, TimelineEvent } from '../types';
 import { BookOpenIcon, SparklesIcon, TextSelectIcon, WandIcon, ImageIcon, CloseIcon, ClockIcon, ReloadIcon, ClipboardCopyIcon, TimelineIcon, SummarizeIcon, KeyPointsIcon, Eli5Icon, AnalogyIcon, PathIcon, PlusIcon, BookmarkIcon } from './IconComponents';
@@ -31,11 +32,23 @@ const WelcomeScreen = React.memo(({ starterTopics, onTopicClick, isLoadingTopics
     );
 });
 
-const ImageDisplay = ({ imageUrl, prompt, onGenerate, isGenerating }: { imageUrl?: string, prompt?: string, onGenerate: () => void, isGenerating: boolean }) => {
+interface ImageDisplayProps {
+    imageUrl?: string;
+    prompt?: string;
+    onGenerate: () => void;
+    isGenerating: boolean;
+    onEdit: (prompt: string) => void;
+    isEditing: boolean;
+}
+
+const ImageDisplay = ({ imageUrl, prompt, onGenerate, isGenerating, onEdit, isEditing }: ImageDisplayProps) => {
     const { settings } = useContext(SettingsContext)!;
     const { locale, t } = useLocalization();
-    if (!prompt) return null;
     const [isCopied, setIsCopied] = useState(false);
+    const [showEditUI, setShowEditUI] = useState(false);
+    const [editPrompt, setEditPrompt] = useState('');
+
+    if (!prompt) return null;
 
     const fullPrompt = constructImagePrompt(prompt, settings, locale);
     const styleModifiers = fullPrompt.replace(`${prompt}, `, '');
@@ -45,11 +58,59 @@ const ImageDisplay = ({ imageUrl, prompt, onGenerate, isGenerating }: { imageUrl
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 2000);
     };
+    
+    const handleEditSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (editPrompt.trim()) {
+            onEdit(editPrompt.trim());
+            setShowEditUI(false);
+            setEditPrompt('');
+        }
+    };
 
     return (
-        <div className="w-full aspect-video bg-gray-800 rounded-lg my-6 flex items-center justify-center overflow-hidden">
+        <div className="relative w-full aspect-video bg-gray-800 rounded-lg my-6 flex items-center justify-center overflow-hidden group">
+             {isEditing && (
+                <div className="absolute inset-0 bg-gray-900/80 z-20 flex items-center justify-center">
+                    <LoadingSpinner text={t('article.editingImage')} />
+                </div>
+            )}
             {imageUrl ? (
-                <img src={imageUrl} alt={prompt} className="w-full h-full object-cover" />
+                <>
+                    <img src={imageUrl} alt={prompt} className="w-full h-full object-cover" />
+                    {!isEditing && !showEditUI && (
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <button 
+                                onClick={() => setShowEditUI(true)}
+                                className="p-2 bg-gray-900/60 backdrop-blur-sm rounded-full text-white hover:bg-accent hover:text-accent-contrast transition-all"
+                                title={t('article.editImage.title')}
+                            >
+                                <WandIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                    )}
+                    {showEditUI && (
+                         <div className="absolute inset-0 bg-black/70 z-20 flex flex-col items-center justify-center p-4 animate-fade-in-down">
+                            <form onSubmit={handleEditSubmit} className="w-full max-w-md">
+                                <label className="text-white font-semibold mb-2 block text-center">{t('article.editImage.promptLabel')}</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={editPrompt}
+                                        onChange={e => setEditPrompt(e.target.value)}
+                                        placeholder={t('article.editImage.placeholder')}
+                                        className="w-full bg-gray-800 border-2 border-gray-600 rounded-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent py-2 px-4"
+                                        autoFocus
+                                    />
+                                    <button type="submit" className="px-4 py-2 bg-accent text-accent-contrast font-semibold rounded-full hover:bg-accent-hover">
+                                        {t('article.generate')}
+                                    </button>
+                                </div>
+                                <button type="button" onClick={() => setShowEditUI(false)} className="mt-3 text-gray-400 text-sm hover:text-white">{t('common.close')}</button>
+                            </form>
+                        </div>
+                    )}
+                </>
             ) : isGenerating ? (
                 <div className="w-full h-full bg-gray-700 flex items-center justify-center">
                     <LoadingSpinner text={t('article.generatingImage')} />
@@ -325,11 +386,13 @@ interface ArticleViewProps {
   onGenerateImage: (sectionIndex: number) => void;
   onGenerateAllImages: () => void;
   generatingImages: number[];
+  onEditImage: (sectionIndex: number, prompt: string) => void;
+  editingImageIndex: number | null;
   fullArticleText: string;
   isBookmarked: boolean;
 }
 
-const ArticleView: React.FC<ArticleViewProps> = ({ article, isLoading, error, onRetry, starterTopics, isLoadingTopics, onTopicClick, onGenerateImage, onGenerateAllImages, generatingImages, fullArticleText, isBookmarked }) => {
+const ArticleView: React.FC<ArticleViewProps> = ({ article, isLoading, error, onRetry, starterTopics, isLoadingTopics, onTopicClick, onGenerateImage, onGenerateAllImages, generatingImages, onEditImage, editingImageIndex, fullArticleText, isBookmarked }) => {
     const { settings } = useContext(SettingsContext)!;
     const { toggleBookmark } = useContext(UserDataContext)!;
     const { t } = useLocalization();
@@ -461,6 +524,8 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, isLoading, error, on
                             prompt={section.imagePrompt}
                             onGenerate={() => onGenerateImage(index)}
                             isGenerating={generatingImages.includes(index)}
+                            onEdit={(prompt) => onEditImage(index, prompt)}
+                            isEditing={editingImageIndex === index}
                         />
                     </section>
                 ))}

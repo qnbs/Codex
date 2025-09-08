@@ -1,3 +1,4 @@
+
 {
     "common": {
         "close": "Close",
@@ -8,7 +9,8 @@
         "copied": "Copied!",
         "save": "Save",
         "search": "Search",
-        "exploreTopic": "Explore a topic..."
+        "exploreTopic": "Explore a topic...",
+        "openMenu": "Open menu"
     },
     "searchbar": {
         "cosmicLeap": {
@@ -33,8 +35,10 @@
         "conclusion": "Conclusion",
         "keyMoments": "Key Moments",
         "learnMore": "Learn more →",
+        "generate": "Generate",
         "generateImage": "Generate Image",
         "generatingImage": "Generating image...",
+        "editingImage": "Editing image...",
         "imagePrompt": "Image Prompt",
         "generateAllImages": "Generate all {{count}} missing images",
         "generatingAllImages": "Generating {{count}} image(s)...",
@@ -48,6 +52,11 @@
             "noPaths": "No paths yet.",
             "create": "+ Create new path",
             "newPathPlaceholder": "New path name..."
+        },
+        "editImage": {
+            "title": "Edit Image with AI",
+            "promptLabel": "Describe your changes:",
+            "placeholder": "e.g., make it nighttime, add a cat..."
         }
     },
     "summary": {
@@ -246,6 +255,7 @@
                     "list": [
                         { "label": "Text Interaction", "text1": "Highlight any word or phrase to bring up a quick menu. You can use", "highlight": "Define, Explain, and Visualize.", "text2": "The AI will provide a concise answer in a pop-up modal." },
                         { "label": "Image Generation", "text1": "Each section has a prompt for a descriptive image. Click 'Generate Image' to have the AI create a visual representation." },
+                        { "label": "AI Image Editing", "text1": "Hover over any generated image and click the 'edit' icon. You can then provide a text prompt to modify the image, like 'change the season to winter' or 'add a cat'." },
                         { "label": "Quick Summaries", "text1": "Use the summary buttons (TL;DR, ELI5, etc.) below the introduction to get different perspectives on the content." },
                         { "label": "Timeline", "text1": "For historical topics, a timeline of key events provides a chronological overview. You can click on events to learn more." }
                     ]
@@ -287,7 +297,8 @@
                     "terms": [
                         { "name": "Athena AI Copilot", "description": "The contextual chat assistant available for each article. It helps you delve deeper into the subject matter by answering questions." },
                         { "name": "Synapse Graph", "description": "An interactive, node-based visualization that displays topics related to the current article, encouraging exploration." },
-                        { "name": "Cosmic Leap", "description": "A feature that suggests a serendipitous, tangentially related topic, designed to broaden your horizons in unexpected ways." }
+                        { "name": "Cosmic Leap", "description": "A feature that suggests a serendipitous, tangentially related topic, designed to broaden your horizons in unexpected ways." },
+                        { "name": "AI Image Editing", "description": "The ability to modify a generated image by providing a text-based prompt. This allows for fine-tuning visuals directly within an article." }
                     ]
                 },
                 {
@@ -344,6 +355,7 @@
         "importSuccess": "Data imported successfully!",
         "allImagesGenerated": "All images have already been generated.",
         "imagesGeneratedSuccess": "{{count}} image(s) successfully generated.",
+        "imageEditedSuccess": "Image edited successfully!",
         "findingConnection": "Finding a surprising connection...",
         "cosmicLeapFound": "Cosmic Leap found: {{topic}}",
         "snapshotRestored": "Restored snapshot \"{{name}}\"."
@@ -352,6 +364,7 @@
         "unknown": "An unknown error occurred.",
         "articleCreationFailed": "Could not create article for \"{{topic}}\".",
         "imageGenerationFailed": "Could not generate image.",
+        "imageEditFailed": "Failed to edit image.",
         "imageGenSectionFailed": "Could not generate image for \"{{section}}\".",
         "cosmicLeapFailed": "Could not find a topic for a cosmic leap.",
         "fileRead": "File could not be read",

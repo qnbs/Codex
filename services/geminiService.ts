@@ -1,5 +1,6 @@
+
 // FIX: Add GenerateImagesResponse type for generateImages API call.
-import { GoogleGenAI, Type, GenerateContentResponse, Chat, GenerateImagesResponse } from "@google/genai";
+import { GoogleGenAI, Type, GenerateContentResponse, Chat, GenerateImagesResponse, Modality } from "@google/genai";
 import { ArticleData, RelatedTopic, ChatMessage, StarterTopic, AppSettings, SummaryType, Locale } from '../types';
 import { Prompts } from './prompts';
 
@@ -329,5 +330,46 @@ export const explainOrDefine = async (text: string, mode: 'Define' | 'Explain' |
         } else {
             throw new Error(`I was unable to ${mode.toLowerCase()} this selection.`);
         }
+    }
+};
+
+export const editImage = async (base64ImageDataUrl: string, prompt: string, locale: Locale): Promise<string> => {
+    try {
+        const [meta, base64Data] = base64ImageDataUrl.split(',');
+        if (!meta || !base64Data) {
+            throw new Error("Invalid base64 image data URL.");
+        }
+        const mimeType = meta.split(':')[1].split(';')[0];
+
+        const response = await callGeminiWithRetry<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-2.5-flash-image-preview',
+            contents: {
+                parts: [
+                    { inlineData: { data: base64Data, mimeType } },
+                    { text: prompt },
+                ],
+            },
+            config: {
+                responseModalities: [Modality.IMAGE, Modality.TEXT],
+            },
+        }), `image edit for prompt "${prompt}"`, locale);
+
+        const imagePart = response.candidates?.[0]?.content?.parts?.find(part => part.inlineData);
+
+        if (imagePart && imagePart.inlineData) {
+            const newMimeType = imagePart.inlineData.mimeType;
+            const newBase64Data = imagePart.inlineData.data;
+            return `data:${newMimeType};base64,${newBase64Data}`;
+        }
+        
+        throw new Error(locale === 'de' ? 'Das bearbeitete Bild konnte nicht extrahiert werden.' : 'Could not extract edited image.');
+
+    } catch (error) {
+        console.error(`Error editing image for prompt "${prompt}":`, error);
+        if (error instanceof Error && (error.message.includes("API-Ratenlimit") || error.message.includes("rate limit"))) {
+            throw error;
+        }
+        const message = locale === 'de' ? `Bildbearbeitung fehlgeschlagen.` : `Image editing failed.`;
+        throw new Error(message);
     }
 };

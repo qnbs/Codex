@@ -26,6 +26,8 @@ Codex ist vollgepackt mit Funktionen, die das Entdecken von Wissen neu definiere
 
 - **🎨 KI-gestützte Visualisierungen:** Jeder Artikelabschnitt kann mit einem einzigartigen, KI-generierten Bild (`imagen-4.0-generate-001`) versehen werden. Passen Sie den visuellen Stil an (Fotorealistisch, Künstlerisch, Vintage etc.).
 
+- **✏️ KI-gestützte Bildbearbeitung:** Bearbeiten Sie jedes generierte Bild direkt im Artikel. Fahren Sie mit der Maus über ein Bild, klicken Sie auf das Bearbeitungssymbol und geben Sie einen Text-Prompt ein (z. B. "Ändere die Jahreszeit auf Winter"), um das Bild mit `gemini-2.5-flash-image-preview` zu modifizieren.
+
 - **🔍 Interaktive Textwerkzeuge:** Markieren Sie einen beliebigen Text im Artikel, um sofort ein Pop-up mit drei Optionen zu erhalten:
     - **Definieren:** Erhalten Sie eine kurze, wörterbuchartige Definition.
     - **Erklären:** Lassen Sie sich das Konzept einfach und verständlich erläutern.
@@ -61,6 +63,7 @@ Codex ist vollgepackt mit Funktionen, die das Entdecken von Wissen neu definiere
 - **KI-Modelle:** Google Gemini API
   - **Textgenerierung:** `gemini-2.5-flash`
   - **Bilderzeugung:** `imagen-4.0-generate-001`
+  - **Bildbearbeitung:** `gemini-2.5-flash-image-preview`
 - **Speicher:** Browser LocalStorage für die persistente Speicherung aller Benutzerdaten.
 
 ---

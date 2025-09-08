@@ -1,5 +1,3 @@
-
-
 import React, { createContext, useContext, useCallback, ReactNode, useState, useEffect } from 'react';
 import { SettingsContext } from './AppContext';
 import { Language, Locale, LocalizationContextType } from '../types';
@@ -15,7 +13,8 @@ const enDefault = {
         "copied": "Copied!",
         "save": "Save",
         "search": "Search",
-        "exploreTopic": "Explore a topic..."
+        "exploreTopic": "Explore a topic...",
+        "openMenu": "Open menu"
     },
     "searchbar": {
         "cosmicLeap": {
@@ -40,8 +39,10 @@ const enDefault = {
         "conclusion": "Conclusion",
         "keyMoments": "Key Moments",
         "learnMore": "Learn more →",
+        "generate": "Generate",
         "generateImage": "Generate Image",
         "generatingImage": "Generating image...",
+        "editingImage": "Editing image...",
         "imagePrompt": "Image Prompt",
         "generateAllImages": "Generate all {{count}} missing images",
         "generatingAllImages": "Generating {{count}} image(s)...",
@@ -55,6 +56,11 @@ const enDefault = {
             "noPaths": "No paths yet.",
             "create": "+ Create new path",
             "newPathPlaceholder": "New path name..."
+        },
+        "editImage": {
+            "title": "Edit Image with AI",
+            "promptLabel": "Describe your changes:",
+            "placeholder": "e.g., make it nighttime, add a cat..."
         }
     },
     "summary": {
@@ -77,6 +83,8 @@ const enDefault = {
         "thinking": "Thinking...",
         "error": "I'm sorry, I'm having trouble responding right now. Please try again in a moment.",
         "placeholder": "Ask a follow-up question... (Ctrl+Enter)",
+        "placeholderLoading": "Waiting for article...",
+        "loadingArticle": "Reading up on '{{topic}}'...",
         "fallbackQuestions": [
             "Summarize this in 3 bullet points",
             "What are the key concepts?",
@@ -105,10 +113,22 @@ const enDefault = {
             "title": "Bookmarks"
         },
         "learningPaths": {
-            "title": "Learning Paths"
+            "title": "Learning Paths",
+            "progress": "{{completed}}/{{total}} completed",
+            "goToArticle": "Go to Article",
+            "removeFromPath": "Remove from Path",
+            "deletePath": "Delete Path",
+            "noArticles": "No articles in this path yet.",
+            "noPathsTitle": "No Learning Paths Created",
+            "noPathsDescription": "You can create a new path by adding an article to it from the article view."
         },
         "snapshots": {
             "title": "Snapshots"
+        },
+        "imageLibrary": {
+            "title": "Image Library",
+            "sourceArticle": "Source Article",
+            "confirmDelete": "Are you sure you want to permanently delete this image?"
         },
         "settings": {
             "title": "Settings"
@@ -223,43 +243,55 @@ const enDefault = {
         },
         "tutorialContent": {
             "intro": "Welcome to Codex! This guide will walk you through the core features to help you get the most out of your knowledge exploration.",
-            "and": "and",
-            "section1": {
-                "title": "Starting Your Journey",
-                "p1": "There are multiple ways to begin exploring:",
-                "li1": { "label": "Direct Search", "text": "Type any topic you're curious about into the main search bar." },
-                "li2": { "label": "Starter Topics", "text": "Choose one of the curated topics on the welcome screen for instant inspiration." },
-                "li3": { "label": "Cosmic Leap", "text": "Click the Cosmic Leap button to be taken to a random, serendipitous topic." }
-            },
-            "section2": {
-                "title": "Engaging with an Article",
-                "p1": "Once an article is generated, you have several tools at your disposal:",
-                "li1": { "label": "Text Interaction", "text": "Highlight any word or phrase to bring up a quick menu. You can", "p2": "The AI will provide a concise answer in a pop-up modal." },
-                "li2": { "label": "Image Generation", "text": "Each section has a prompt for a descriptive image. Click 'Generate Image' to have the AI create a visual representation." },
-                "li3": { "label": "Quick Summaries", "text": "Use the summary buttons (TL;DR, ELI5, etc.) below the introduction to get different perspectives on the content." },
-                "li4": { "label": "Timeline", "text": "For historical topics, a timeline of key events provides a chronological overview. You can click on events to learn more." }
-            },
-            "section3": {
-                "title": "Conversing with Athena",
-                "p1": "The panel on the right is your AI Copilot, Athena. She has full context of the article you're reading.",
-                "li1": { "label": "Ask Anything:", "text": "Ask for clarification, deeper insights, or how concepts relate to each other." },
-                "li2": { "label": "Suggested Questions:", "text": "Use the suggestion chips to ask thoughtful questions curated by the AI." }
-            },
-            "section4": {
-                "title": "Connecting Knowledge",
-                "p1": "Codex is designed to help you discover connections between topics.",
-                "li1": { "label": "Synapse Graph:", "text": "At the bottom of each article, this graph shows you related topics. Click any node to generate a new article and continue your journey." },
-                "li2": { "label": "In-Article Links:", "text": "Clicking on events in the timeline will also start a search for that new topic." },
-                "li3": { "label": "Cosmic Leap:", "text": "Use this feature from the Synapse Graph to jump to a tangentially related but interesting new subject." }
-            },
-            "section5": {
-                "title": "Managing Your Data",
-                "p1": "Codex saves all your data in your browser. Access and manage it using the icons in the top-right header:",
-                "li1": { "label": "History:", "text": "Revisit topics you've recently explored." },
-                "li2": { "label": "Bookmarks:", "text": "Save your favorite or most important articles for easy access." },
-                "li3": { "label": "Learning Paths:", "text": "Group related articles together to form a custom curriculum on a subject." },
-                "li4": { "label": "Snapshots:", "text": "Save an entire session—including the article, chat history, and related topics—to restore later." }
-            }
+            "sections": [
+                {
+                    "title": "Starting Your Journey",
+                    "p1": "There are multiple ways to begin exploring:",
+                    "list": [
+                        { "label": "Direct Search", "text1": "Type any topic you're curious about into the main search bar." },
+                        { "label": "Starter Topics", "text1": "Choose one of the curated topics on the welcome screen for instant inspiration." },
+                        { "label": "Cosmic Leap", "text1": "Click the Cosmic Leap button to be taken to a random, serendipitous topic." }
+                    ]
+                },
+                {
+                    "title": "Engaging with an Article",
+                    "p1": "Once an article is generated, you have several tools at your disposal:",
+                    "list": [
+                        { "label": "Text Interaction", "text1": "Highlight any word or phrase to bring up a quick menu. You can use", "highlight": "Define, Explain, and Visualize.", "text2": "The AI will provide a concise answer in a pop-up modal." },
+                        { "label": "Image Generation", "text1": "Each section has a prompt for a descriptive image. Click 'Generate Image' to have the AI create a visual representation." },
+                        { "label": "AI Image Editing", "text1": "Hover over any generated image and click the 'edit' icon. You can then provide a text prompt to modify the image, like 'change the season to winter' or 'add a cat'." },
+                        { "label": "Quick Summaries", "text1": "Use the summary buttons (TL;DR, ELI5, etc.) below the introduction to get different perspectives on the content." },
+                        { "label": "Timeline", "text1": "For historical topics, a timeline of key events provides a chronological overview. You can click on events to learn more." }
+                    ]
+                },
+                {
+                    "title": "Conversing with Athena",
+                    "p1": "The panel on the right is your AI Copilot, Athena. She has full context of the article you're reading.",
+                    "list": [
+                        { "label": "Ask Anything", "text1": "Ask for clarification, deeper insights, or how concepts relate to each other." },
+                        { "label": "Suggested Questions", "text1": "Use the suggestion chips to ask thoughtful questions curated by the AI." }
+                    ]
+                },
+                {
+                    "title": "Connecting Knowledge",
+                    "p1": "Codex is designed to help you discover connections between topics.",
+                    "list": [
+                        { "label": "Synapse Graph", "text1": "At the bottom of each article, this graph shows you related topics. Click any node to generate a new article and continue your journey." },
+                        { "label": "In-Article Links", "text1": "Clicking on events in the timeline will also start a search for that new topic." },
+                        { "label": "Cosmic Leap", "text1": "Use this feature from the Synapse Graph to jump to a tangentially related but interesting new subject." }
+                    ]
+                },
+                {
+                    "title": "Managing Your Data",
+                    "p1": "Codex saves all your data in your browser. Access and manage it using the icons in the top-right header:",
+                    "list": [
+                        { "label": "History", "text1": "Revisit topics you've recently explored." },
+                        { "label": "Bookmarks", "text1": "Save your favorite or most important articles for easy access." },
+                        { "label": "Learning Paths", "text1": "Group related articles together to form a custom curriculum on a subject." },
+                        { "label": "Snapshots", "text1": "Save an entire session—including the article, chat history, and related topics—to restore later." }
+                    ]
+                }
+            ]
         },
         "glossaryContent": {
             "intro": "This glossary explains the key terms and concepts within the Codex application.",
@@ -269,7 +301,8 @@ const enDefault = {
                     "terms": [
                         { "name": "Athena AI Copilot", "description": "The contextual chat assistant available for each article. It helps you delve deeper into the subject matter by answering questions." },
                         { "name": "Synapse Graph", "description": "An interactive, node-based visualization that displays topics related to the current article, encouraging exploration." },
-                        { "name": "Cosmic Leap", "description": "A feature that suggests a serendipitous, tangentially related topic, designed to broaden your horizons in unexpected ways." }
+                        { "name": "Cosmic Leap", "description": "A feature that suggests a serendipitous, tangentially related topic, designed to broaden your horizons in unexpected ways." },
+                        { "name": "AI Image Editing", "description": "The ability to modify a generated image by providing a text-based prompt. This allows for fine-tuning visuals directly within an article." }
                     ]
                 },
                 {
@@ -316,6 +349,7 @@ const enDefault = {
         "bookmarkRemoved": "Removed bookmark for \"{{topic}}\".",
         "bookmarkAdded": "Added \"{{topic}}\" to bookmarks.",
         "articleAddedToPath": "Added \"{{articleTitle}}\" to learning path \"{{pathName}}\".",
+        "articleAlreadyInPath": "\"{{articleTitle}}\" is already in the path \"{{pathName}}\".",
         "pathCreated": "Created learning path \"{{pathName}}\".",
         "snapshotSaved": "Snapshot \"{{name}}\" saved!",
         "articleRemovedFromPath": "\"{{articleTitle}}\" has been removed from the path \"{{pathName}}\".",
@@ -325,6 +359,7 @@ const enDefault = {
         "importSuccess": "Data imported successfully!",
         "allImagesGenerated": "All images have already been generated.",
         "imagesGeneratedSuccess": "{{count}} image(s) successfully generated.",
+        "imageEditedSuccess": "Image edited successfully!",
         "findingConnection": "Finding a surprising connection...",
         "cosmicLeapFound": "Cosmic Leap found: {{topic}}",
         "snapshotRestored": "Restored snapshot \"{{name}}\"."
@@ -333,11 +368,16 @@ const enDefault = {
         "unknown": "An unknown error occurred.",
         "articleCreationFailed": "Could not create article for \"{{topic}}\".",
         "imageGenerationFailed": "Could not generate image.",
+        "imageEditFailed": "Failed to edit image.",
         "imageGenSectionFailed": "Could not generate image for \"{{section}}\".",
         "cosmicLeapFailed": "Could not find a topic for a cosmic leap.",
         "fileRead": "File could not be read",
         "invalidBackup": "Invalid backup file structure.",
-        "importFailed": "Failed to import data."
+        "importFailed": "Failed to import data.",
+        "dbLoadFailed": "Could not load image library from the database.",
+        "dbSaveFailed": "Failed to save image to the database.",
+        "dbDeleteFailed": "Failed to delete image from the database.",
+        "dbClearFailed": "Failed to clear the image library."
     }
 };
 

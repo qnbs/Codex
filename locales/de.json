@@ -8,7 +8,8 @@
         "copied": "Kopiert!",
         "save": "Speichern",
         "search": "Suchen",
-        "exploreTopic": "Ein Thema erkunden..."
+        "exploreTopic": "Ein Thema erkunden...",
+        "openMenu": "Menü öffnen"
     },
     "searchbar": {
         "cosmicLeap": {
@@ -33,8 +34,10 @@
         "conclusion": "Fazit",
         "keyMoments": "Schlüsselmomente",
         "learnMore": "Mehr erfahren →",
+        "generate": "Generieren",
         "generateImage": "Bild generieren",
         "generatingImage": "Generiere Bild...",
+        "editingImage": "Bearbeite Bild...",
         "imagePrompt": "Bild-Prompt",
         "generateAllImages": "Alle {{count}} fehlenden Bilder generieren",
         "generatingAllImages": "Generiere {{count}} Bild(er)...",
@@ -48,6 +51,11 @@
             "noPaths": "Noch keine Pfade.",
             "create": "+ Neuen Pfad erstellen",
             "newPathPlaceholder": "Name des neuen Pfades..."
+        },
+        "editImage": {
+            "title": "Bild mit KI bearbeiten",
+            "promptLabel": "Beschreiben Sie Ihre Änderungen:",
+            "placeholder": "z. B. mache es Nacht, füge eine Katze hinzu..."
         }
     },
     "summary": {
@@ -246,6 +254,7 @@
                     "list": [
                         { "label": "Text-Interaktion", "text1": "Markieren Sie ein beliebiges Wort oder einen Satz, um ein Schnellmenü aufzurufen. Sie können", "highlight": "Definieren, Erklären und Visualisieren.", "text2": "Die KI liefert eine prägnante Antwort in einem Pop-up-Fenster." },
                         { "label": "Bilderzeugung", "text1": "Jeder Abschnitt hat einen Prompt für ein beschreibendes Bild. Klicken Sie auf 'Bild generieren', um die KI eine visuelle Darstellung erstellen zu lassen." },
+                        { "label": "KI-Bildbearbeitung", "text1": "Fahren Sie mit der Maus über ein generiertes Bild und klicken Sie auf das Bearbeitungssymbol. Sie können dann einen Text-Prompt eingeben, um das Bild zu ändern, z. B. 'ändere die Jahreszeit zu Winter' oder 'füge eine Katze hinzu'." },
                         { "label": "Schnellzusammenfassungen", "text1": "Verwenden Sie die Zusammenfassungs-Schaltflächen (Zfsg., EWI5 usw.) unter der Einleitung, um unterschiedliche Perspektiven auf den Inhalt zu erhalten." },
                         { "label": "Zeitleiste", "text1": "Bei historischen Themen bietet eine Zeitleiste mit Schlüsselereignissen einen chronologischen Überblick. Sie können auf Ereignisse klicken, um mehr zu erfahren." }
                     ]
@@ -287,7 +296,8 @@
                     "terms": [
                         { "name": "Athena KI-Copilot", "description": "Der kontextbezogene Chat-Assistent, der für jeden Artikel verfügbar ist. Er hilft Ihnen, tiefer in die Materie einzutauchen, indem er Fragen beantwortet." },
                         { "name": "Synapsen-Graph", "description": "Eine interaktive, knotenbasierte Visualisierung, die Themen im Zusammenhang mit dem aktuellen Artikel anzeigt und zum Erkunden anregt." },
-                        { "name": "Kosmischer Sprung", "description": "Eine Funktion, die ein überraschendes, entfernt verwandtes Thema vorschlägt, um Ihren Horizont auf unerwartete Weise zu erweitern." }
+                        { "name": "Kosmischer Sprung", "description": "Eine Funktion, die ein überraschendes, entfernt verwandtes Thema vorschlägt, um Ihren Horizont auf unerwartete Weise zu erweitern." },
+                        { "name": "KI-Bildbearbeitung", "description": "Die Fähigkeit, ein generiertes Bild durch die Eingabe eines textbasierten Prompts zu verändern. Dies ermöglicht die Feinabstimmung von Visualisierungen direkt im Artikel." }
                     ]
                 },
                 {
@@ -344,6 +354,7 @@
         "importSuccess": "Daten erfolgreich importiert!",
         "allImagesGenerated": "Alle Bilder wurden bereits generiert.",
         "imagesGeneratedSuccess": "{{count}} Bild(er) erfolgreich generiert.",
+        "imageEditedSuccess": "Bild erfolgreich bearbeitet!",
         "findingConnection": "Suche nach einer überraschenden Verbindung...",
         "cosmicLeapFound": "Kosmischer Sprung gefunden: {{topic}}",
         "snapshotRestored": "Schnappschuss \"{{name}}\" wiederhergestellt."
@@ -352,6 +363,7 @@
         "unknown": "Ein unbekannter Fehler ist aufgetreten.",
         "articleCreationFailed": "Konnte keinen Artikel für \"{{topic}}\" erstellen.",
         "imageGenerationFailed": "Konnte kein Bild generieren.",
+        "imageEditFailed": "Bildbearbeitung fehlgeschlagen.",
         "imageGenSectionFailed": "Konnte kein Bild für \"{{section}}\" generieren.",
         "cosmicLeapFailed": "Konnte kein Thema für einen kosmischen Sprung finden.",
         "fileRead": "Datei konnte nicht gelesen werden",
