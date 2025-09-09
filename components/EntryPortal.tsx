@@ -20,9 +20,9 @@ const TutorialStep = ({ icon: Icon, title, children }: { icon: React.FC<{classNa
 
 
 const EntryPortal: React.FC<EntryPortalProps> = ({ onStart }) => {
-    const { t } = useLocalization();
+    const { t, locale, setLocale } = useLocalization();
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-95 z-[100] flex items-center justify-center p-4 transition-opacity duration-500">
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-95 z-[100] flex justify-center items-start p-4 pt-12 transition-opacity duration-500">
             <div className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-y-auto">
                 <div className="p-8 md:p-12 text-center">
                     <h1 className="text-4xl md:text-5xl font-bold text-accent mb-3">{t('entry.title')}</h1>
@@ -48,12 +48,38 @@ const EntryPortal: React.FC<EntryPortalProps> = ({ onStart }) => {
                 </div>
 
                 <div className="p-8 text-center mt-auto">
-                     <button 
-                        onClick={onStart} 
-                        className="px-8 py-3 bg-accent text-accent-contrast font-bold text-lg rounded-full hover:bg-accent-hover transition-transform transform hover:scale-105 active:scale-100 shadow-lg"
-                    >
-                        {t('entry.startExploring')}
-                    </button>
+                    <div className="mb-6">
+                        <div className="flex justify-center items-center gap-4">
+                            <button
+                                onClick={() => setLocale('de')}
+                                className={`px-6 py-2 border-2 rounded-full font-semibold transition-colors ${
+                                    locale === 'de'
+                                    ? 'border-accent bg-accent/20 text-accent'
+                                    : 'border-gray-600 text-gray-400 hover:border-gray-400 hover:text-white'
+                                }`}
+                            >
+                                Deutsch
+                            </button>
+                            <button
+                                onClick={() => setLocale('en')}
+                                className={`px-6 py-2 border-2 rounded-full font-semibold transition-colors ${
+                                    locale === 'en'
+                                    ? 'border-accent bg-accent/20 text-accent'
+                                    : 'border-gray-600 text-gray-400 hover:border-gray-400 hover:text-white'
+                                }`}
+                            >
+                                English
+                            </button>
+                        </div>
+                    </div>
+                     <div className="h-[60px] flex items-center justify-center">
+                         <button 
+                            onClick={onStart} 
+                            className="px-8 py-3 bg-accent text-accent-contrast font-bold text-lg rounded-full hover:bg-accent-hover transition-transform transform hover:scale-105 active:scale-100 shadow-lg"
+                        >
+                            {t('entry.startExploring')}
+                        </button>
+                     </div>
                 </div>
             </div>
         </div>

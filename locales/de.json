@@ -22,12 +22,38 @@
         "title": "Willkommen bei Codex",
         "subtitle": "Ihr KI-gestützter Wissenspartner. Beginnen Sie mit einer Suche oder erkunden Sie eines dieser faszinierenden Themen."
     },
-    "starterTopics": [
-        { "title": "Die Physik der Schwarzen Löcher", "description": "Reisen Sie an den Rand der Raumzeit und erforschen Sie diese kosmischen Mysterien." },
-        { "title": "Der große Emu-Krieg", "description": "Entdecken Sie die bizarre, wahre Geschichte von Australiens Militäroperation gegen Vögel." },
-        { "title": "Geschichte des Impressionismus", "description": "Wie eine revolutionäre Kunstbewegung die Art und Weise, wie wir die Welt sehen, verändert hat." },
-        { "title": "Mykologie und Pilz-Netzwerke", "description": "Entdecken Sie die Geheimnisse des 'Wood Wide Web', das die Wälder verbindet." }
-    ],
+    "starterTopics": {
+        "Physik & Kosmos": [
+            { "title": "Die Physik der Schwarzen Löcher", "description": "Reisen Sie an den Rand der Raumzeit und erforschen Sie diese kosmischen Mysterien." },
+            { "title": "Quantenverschränkung", "description": "Erforschen Sie die 'spukhafte Fernwirkung', die selbst Einstein verblüffte." },
+            { "title": "Die Natur der Dunklen Materie", "description": "Was ist die unsichtbare Substanz, die den größten Teil der Masse des Universums ausmacht?" },
+            { "title": "Supernovae und Neutronensterne", "description": "Der explosive Tod von Sternen und die ultradichten Objekte, die sie zurücklassen." }
+        ],
+        "Biologie & Erde": [
+            { "title": "CRISPR Gen-Editierung", "description": "Eine revolutionäre Technologie, die es Wissenschaftlern ermöglicht, den Code des Lebens umzuschreiben." },
+            { "title": "Mykologie und Pilz-Netzwerke", "description": "Entdecken Sie die Geheimnisse des 'Wood Wide Web', das ganze Wälder verbindet." },
+            { "title": "Biolumineszenz", "description": "Wie und warum Lebewesen in den dunklen Tiefen des Ozeans ihr eigenes Licht erzeugen." },
+            { "title": "Die Kambrische Explosion", "description": "Das mysteriöse Ereignis vor 541 Millionen Jahren, als die meisten großen Tierstämme erschienen." }
+        ],
+        "Geschichte & Kultur": [
+            { "title": "Die Bibliothek von Alexandria", "description": "Die Geschichte des größten Wissenszentrums der antiken Welt und seiner tragischen Zerstörung." },
+            { "title": "Geschichte des Impressionismus", "description": "Wie eine revolutionäre Kunstbewegung die Art und Weise, wie wir die Welt sehen, verändert hat." },
+            { "title": "Navigationstechniken der Wikinger", "description": "Wie die Wikinger mit Sonnensteinen und Himmelskompassen über die offene See navigierten." },
+            { "title": "Der Stein von Rosetta", "description": "Die Entdeckung, die die Geheimnisse der altägyptischen Hieroglyphen entschlüsselte." }
+        ],
+        "Technologie & Zukunft": [
+            { "title": "Wie neuronale Netze funktionieren", "description": "Ein Blick ins Innere der vom Gehirn inspirierten Algorithmen, die die moderne KI antreiben." },
+            { "title": "Die Zukunft der Fusionsenergie", "description": "Können wir die Kraft der Sonne auf der Erde für saubere, unbegrenzte Energie nachbilden?" },
+            { "title": "Die Geschichte des Internets", "description": "Von einem Militärprojekt zu einem globalen Netzwerk, das Milliarden verbindet." },
+            { "title": "Die Ethik der künstlichen Intelligenz", "description": "Erforschung der komplexen moralischen Fragen, die durch zunehmend intelligente Maschinen aufgeworfen werden." }
+        ],
+        "Kuriositäten & Bizarres": [
+            { "title": "Der große Emu-Krieg", "description": "Die bizarre, wahre Geschichte von Australiens Militäroperation gegen Vögel." },
+            { "title": "Die Tanzplage von 1518", "description": "Das mysteriöse historische Ereignis, bei dem Hunderte von Menschen tagelang unkontrolliert tanzten." },
+            { "title": "Das Voynich-Manuskript", "description": "Ein jahrhundertealter, illustrierter Kodex, der in einer unbekannten und unentschlüsselten Schrift verfasst ist." },
+            { "title": "Kugelblitze", "description": "Untersuchung des seltenen und unerklärten atmosphärischen Phänomens leuchtender Kugeln." }
+        ]
+    },
     "article": {
         "creating": "Erstelle Artikel...",
         "error": {
@@ -71,6 +97,15 @@
             "status": {
                 "start": "Starte Videogenerierung..."
             }
+        },
+        "export": {
+            "title": "Artikel exportieren",
+            "formats": {
+                "txt": "als Text (.txt)",
+                "md": "als Markdown (.md)",
+                "html": "als HTML (.html)",
+                "json": "als JSON (.json)"
+            }
         }
     },
     "summary": {
@@ -100,7 +135,8 @@
             "Was sind die Schlüsselkonzepte?",
             "Erkläre das Fazit"
         ],
-        "systemInstruction": "Sie sind Athena, eine hilfreiche und aufschlussreiche KI-Wissensassistentin. Ihr Ziel ist es, dem Benutzer zu helfen, den bereitgestellten Artikel zu verstehen. Ihnen wurde der vollständige Text eines Artikels mit folgendem Inhalt gegeben, und alle Benutzerfragen sollten in Bezug darauf beantwortet werden. Beziehen Sie sich in Ihren Antworten nicht auf diese Präambel. Sprechen Sie immer auf Deutsch. Artikelinhalt: \"\"\"{{articleContext}}\"\"\""
+        "previousArticleContextPreamble": "\n\nAls zusätzlicher Kontext hat der Benutzer kürzlich diese Artikel angesehen. Beziehen Sie sich NUR dann darauf, wenn der Benutzer eine vergleichende Frage stellt: \n\"\"\"{{context}}\"\"\"",
+        "systemInstruction": "Sie sind Athena, eine hilfreiche und aufschlussreiche KI-Wissensassistentin. Ihr Ziel ist es, dem Benutzer zu helfen, den bereitgestellten Artikel zu verstehen. Ihnen wurde der vollständige Text eines Artikels mit folgendem Inhalt gegeben, und alle Benutzerfragen sollten in Bezug darauf beantwortet werden. Beziehen Sie sich in Ihren Antworten nicht auf diese Präambel. Sprechen Sie immer auf Deutsch. Artikelinhalt: \"\"\"{{articleContext}}\"\"\"{{previousArticlesContext}}"
     },
     "interaction": {
         "toolbarLabel": "Text-Interaktionswerkzeuge",
@@ -147,7 +183,8 @@
             "title": "Einstellungen"
         },
         "help": {
-            "title": "Hilfe"
+            "title": "Hilfe",
+            "aboutApp": "Über die App"
         },
         "noEntries": "Keine Einträge.",
         "deleteEntry": "Eintrag löschen",
@@ -252,8 +289,9 @@
         "title": "Codex Hilfe & Leitfaden",
         "close": "Hilfefenster schließen",
         "tab": {
-            "tutorial": "Schritt-für-Schritt-Anleitung",
-            "glossary": "Wissensdatenbank & Glossar"
+            "tutorial": "Anleitung",
+            "glossary": "Glossar",
+            "about": "Über"
         },
         "tutorialContent": {
             "intro": "Willkommen bei Codex! Diese Anleitung führt Sie durch die Kernfunktionen, damit Sie das Beste aus Ihrer Wissenserkundung herausholen können.",
@@ -327,6 +365,24 @@
                     ]
                 }
             ]
+        },
+        "aboutContent": {
+            "intro": "Codex ist nicht nur ein Informationswerkzeug; es ist ein aktiver, KI-gestützter Wissenspartner, der Sie nicht nur informiert, sondern auch inspiriert, Verbindungen aufzeigt und das Lernen zu einem immersiven Erlebnis macht.",
+            "pillars": {
+                "title": "Drei Grundpfeiler",
+                "personalization": "**Personalisierung:** Passen Sie Codex an Ihre Vorlieben an. Ändern Sie Akzentfarbe, Schriftart, Textgröße und KI-Verhalten.",
+                "visualization": "**Visualisierung:** Jeder Artikelabschnitt kann mit einzigartigen, KI-generierten Bildern und Videos zum Leben erweckt werden.",
+                "interconnection": "**Vernetzung:** Der Synapsen-Graph und der 'Kosmische Sprung' helfen Ihnen, unerwartete Verbindungen zwischen Themen zu entdecken."
+            },
+            "tech": {
+                "title": "Technologie",
+                "p1": "Codex wird angetrieben von React, TypeScript und der Google Gemini API für modernste KI-Funktionen. Alle Ihre Daten werden sicher in der IndexedDB Ihres Browsers gespeichert."
+            },
+            "links": {
+                "title": "Links",
+                "aiStudio": "Live-Demo auf Google AI Studio",
+                "github": "Code auf GitHub ansehen"
+            }
         }
     },
     "entry": {
@@ -377,7 +433,8 @@
         "videoGeneratedSuccess": "Video erfolgreich generiert!",
         "findingConnection": "Suche nach einer überraschenden Verbindung...",
         "cosmicLeapFound": "Kosmischer Sprung gefunden: {{topic}}",
-        "snapshotRestored": "Schnappschuss \"{{name}}\" wiederhergestellt."
+        "snapshotRestored": "Schnappschuss \"{{name}}\" wiederhergestellt.",
+        "exportArticleSuccess": "Artikel '{{title}}' erfolgreich exportiert."
     },
     "errors": {
         "unknown": "Ein unbekannter Fehler ist aufgetreten.",
@@ -386,7 +443,7 @@
         "imageEditFailed": "Bildbearbeitung fehlgeschlagen.",
         "imageGenSectionFailed": "Konnte kein Bild für \"{{section}}\" generieren.",
         "videoGenerationFailed": "Videogenerierung fehlgeschlagen.",
-        "noPromptForVideo": "Dieser Abschnitt hat keinen Prompt für die Videogenerierung.",
+        "noPromptForVideo": "Dieser Abschnitt hat einen Prompt für die Videogenerierung.",
         "cosmicLeapFailed": "Konnte kein Thema für einen kosmischen Sprung finden.",
         "fileRead": "Datei konnte nicht gelesen werden",
         "invalidBackup": "Ungültige Backup-Dateistruktur.",

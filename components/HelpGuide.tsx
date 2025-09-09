@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { CloseIcon } from './IconComponents';
+import { CloseIcon, InformationCircleIcon, SparklesIcon, CogIcon, LinkIcon, ExternalLinkIcon } from './IconComponents';
 import { useLocalization } from '../context/LocalizationContext';
 
 interface HelpGuideProps {
@@ -63,6 +63,66 @@ const GlossaryContent = () => {
     );
 };
 
+const InfoSection = ({ title, children, icon: Icon }: { title: string, children: React.ReactNode, icon: React.FC<{className?: string}> }) => (
+    <div className="p-4 bg-gray-800/50 rounded-lg mt-4 not-prose">
+        <h4 className="flex items-center gap-3 font-bold text-md text-gray-100">
+            <Icon className="w-5 h-5 text-accent" />
+            <span>{title}</span>
+        </h4>
+        <div className="text-gray-400 text-sm mt-3 pl-8 space-y-2">{children}</div>
+    </div>
+);
+
+const AboutContent = () => {
+    const { t } = useLocalization();
+    const about = t('help.aboutContent');
+
+    const parseMarkdownLinks = (text: string) => {
+        const parts = text.split(/(\[.*?\]\(.*?\))/g);
+        return parts.map((part, index) => {
+            const match = part.match(/\[(.*?)\]\((.*?)\)/);
+            if (match) {
+                const isExternal = match[2].startsWith('http');
+                return (
+                    <a href={match[2]} key={index} target={isExternal ? "_blank" : undefined} rel={isExternal ? "noopener noreferrer" : undefined} className="inline-flex items-center gap-1 text-accent hover:underline">
+                        <span>{match[1]}</span>
+                        {isExternal && <ExternalLinkIcon className="w-3.5 h-3.5" />}
+                    </a>
+                );
+            }
+            return part;
+        });
+    };
+    
+    return (
+        <div className="space-y-4">
+            <div className="text-center p-4 bg-gray-800/20 rounded-lg">
+                <h3 className="text-xl font-bold text-accent">{t('panels.help.aboutApp')}</h3>
+                <p className="mt-2 text-gray-300">{about.intro}</p>
+            </div>
+            
+            <InfoSection title={about.pillars.title} icon={SparklesIcon}>
+                <ul className="list-disc pl-5 space-y-2">
+                    <li>{parseMarkdownLinks(about.pillars.personalization)}</li>
+                    <li>{parseMarkdownLinks(about.pillars.visualization)}</li>
+                    <li>{parseMarkdownLinks(about.pillars.interconnection)}</li>
+                </ul>
+            </InfoSection>
+
+            <InfoSection title={about.tech.title} icon={CogIcon}>
+                <p>{parseMarkdownLinks(about.tech.p1)}</p>
+            </InfoSection>
+
+            <InfoSection title={about.links.title} icon={LinkIcon}>
+                 <ul className="space-y-2">
+                    <li><a href="https://ai.studio/apps/drive/1e5Yc-ommOORZdnzXxOBpCWtjJw5dIypi" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-accent hover:underline">{about.links.aiStudio} <ExternalLinkIcon className="w-4 h-4" /></a></li>
+                    <li><a href="https://github.com/qnbs/Codex" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-accent hover:underline">{about.links.github} <ExternalLinkIcon className="w-4 h-4" /></a></li>
+                </ul>
+            </InfoSection>
+        </div>
+    );
+};
+
 
 const HelpGuide: React.FC<HelpGuideProps> = ({ isVisible, onClose }) => {
     const { t } = useLocalization();
@@ -110,11 +170,18 @@ const HelpGuide: React.FC<HelpGuideProps> = ({ isVisible, onClose }) => {
                         >
                             {t('help.tab.glossary')}
                         </button>
+                         <button
+                             onClick={() => setActiveTab('about')}
+                             className={`px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'about' ? 'bg-accent/20 text-accent' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
+                             aria-current={activeTab === 'about' ? 'page' : undefined}
+                        >
+                            {t('help.tab.about')}
+                        </button>
                     </nav>
                 </div>
                 
                 <div className="p-6 overflow-y-auto flex-grow">
-                    {activeTab === 'tutorial' ? <TutorialContent /> : <GlossaryContent />}
+                    {activeTab === 'tutorial' ? <TutorialContent /> : activeTab === 'glossary' ? <GlossaryContent /> : <AboutContent />}
                 </div>
             </div>
         </div>

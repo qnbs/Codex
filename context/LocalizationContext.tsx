@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useCallback, ReactNode, useState, useEffect } from 'react';
 import { SettingsContext } from './AppContext';
 import { Language, Locale, LocalizationContextType } from '../types';
@@ -9,7 +10,8 @@ const enDefault = {
         "loading": "Thinking...",
         "retry": "Retry",
         "ok": "OK",
-        "copy": "Copy Prompt",
+        "copyPrompt": "Copy Prompt",
+        "copy": "Copy",
         "copied": "Copied!",
         "save": "Save",
         "search": "Search",
@@ -25,12 +27,17 @@ const enDefault = {
         "title": "Welcome to Codex",
         "subtitle": "Your AI-powered knowledge partner. Start with a search or explore one of these fascinating topics."
     },
-    "starterTopics": [
-        { "title": "The Physics of Black Holes", "description": "Journey to the edge of spacetime and explore these cosmic mysteries." },
-        { "title": "The Great Emu War", "description": "Discover the bizarre true story of Australia's military operation against birds." },
-        { "title": "History of Impressionism", "description": "How a revolutionary art movement changed the way we see the world." },
-        { "title": "Mycology and Fungal Networks", "description": "Uncover the secrets of the 'Wood Wide Web' that connects forests." }
-    ],
+    // FIX: Restructured starterTopics to be a categorized object to match the UI's expectation.
+    "starterTopics": {
+        "Science & Nature": [
+            { "title": "The Physics of Black Holes", "description": "Journey to the edge of spacetime and explore these cosmic mysteries." },
+            { "title": "Mycology and Fungal Networks", "description": "Uncover the secrets of the 'Wood Wide Web' that connects forests." }
+        ],
+        "History & Arts": [
+            { "title": "The Great Emu War", "description": "Discover the bizarre true story of Australia's military operation against birds." },
+            { "title": "History of Impressionism", "description": "How a revolutionary art movement changed the way we see the world." }
+        ]
+    },
     "article": {
         "creating": "Creating article...",
         "error": {
@@ -103,7 +110,8 @@ const enDefault = {
             "What are the key concepts?",
             "Explain the conclusion"
         ],
-        "systemInstruction": "You are Athena, a helpful and insightful AI knowledge assistant. Your goal is to help the user understand the provided article. You have been given the full text of an article with the following content, and all user questions should be answered in relation to it. Do not refer to this preamble in your responses. Always speak in English. Article content: \"\"\"{{articleContext}}\"\"\""
+        "previousArticleContextPreamble": "\n\nFor additional context, the user has recently viewed these articles. Refer to them ONLY if the user asks a comparative question: \n\"\"\"{{context}}\"\"\"",
+        "systemInstruction": "You are Athena, a helpful and insightful AI knowledge assistant. Your goal is to help the user understand the provided article. You have been given the full text of an article with the following content, and all user questions should be answered in relation to it. Do not refer to this preamble in your responses. Always speak in English. Article content: \"\"\"{{articleContext}}\"\"\"{{previousArticlesContext}}"
     },
     "interaction": {
         "toolbarLabel": "Text interaction tools",
@@ -254,7 +262,8 @@ const enDefault = {
         "close": "Close help window",
         "tab": {
             "tutorial": "Step-by-step Guide",
-            "glossary": "Knowledge Base & Glossary"
+            "glossary": "Knowledge Base & Glossary",
+            "about": "About"
         },
         "tutorialContent": {
             "intro": "Welcome to Codex! This guide will walk you through the core features to help you get the most out of your knowledge exploration.",

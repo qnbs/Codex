@@ -22,12 +22,38 @@
         "title": "Welcome to Codex",
         "subtitle": "Your AI-powered knowledge partner. Start with a search or explore one of these fascinating topics."
     },
-    "starterTopics": [
-        { "title": "The Physics of Black Holes", "description": "Journey to the edge of spacetime and explore these cosmic mysteries." },
-        { "title": "The Great Emu War", "description": "Discover the bizarre true story of Australia's military operation against birds." },
-        { "title": "History of Impressionism", "description": "How a revolutionary art movement changed the way we see the world." },
-        { "title": "Mycology and Fungal Networks", "description": "Uncover the secrets of the 'Wood Wide Web' that connects forests." }
-    ],
+    "starterTopics": {
+        "Physics & Cosmos": [
+            { "title": "The Physics of Black Holes", "description": "Journey to the edge of spacetime and explore these cosmic mysteries." },
+            { "title": "Quantum Entanglement", "description": "Explore the 'spooky action at a distance' that baffled even Einstein." },
+            { "title": "The Nature of Dark Matter", "description": "What is the invisible substance that makes up most of the universe's mass?" },
+            { "title": "Supernovae and Neutron Stars", "description": "The explosive deaths of stars and the ultra-dense objects they leave behind." }
+        ],
+        "Biology & Earth": [
+            { "title": "CRISPR Gene Editing", "description": "A revolutionary technology that allows scientists to rewrite the code of life." },
+            { "title": "Mycology and Fungal Networks", "description": "Uncover the secrets of the 'Wood Wide Web' that connects entire forests." },
+            { "title": "Bioluminescence", "description": "How and why living organisms produce their own light in the dark depths of the ocean." },
+            { "title": "The Cambrian Explosion", "description": "The mysterious event 541 million years ago when most major animal phyla appeared." }
+        ],
+        "History & Culture": [
+            { "title": "The Library of Alexandria", "description": "The story of the ancient world's greatest hub of knowledge and its tragic destruction." },
+            { "title": "History of Impressionism", "description": "How a revolutionary art movement changed the way we see the world." },
+            { "title": "Viking Navigation Techniques", "description": "How Vikings navigated the open seas using sunstones and sky-compasses." },
+            { "title": "The Rosetta Stone", "description": "The discovery that unlocked the secrets of ancient Egyptian hieroglyphs." }
+        ],
+        "Technology & Future": [
+            { "title": "How Neural Networks Work", "description": "A look inside the brain-inspired algorithms that power modern AI." },
+            { "title": "The Future of Fusion Energy", "description": "Can we replicate the power of the sun on Earth for clean, limitless energy?" },
+            { "title": "The History of the Internet", "description": "From a military project to a global network connecting billions." },
+            { "title": "The Ethics of Artificial Intelligence", "description": "Exploring the complex moral questions raised by increasingly intelligent machines." }
+        ],
+        "Curiosities & Bizarre": [
+            { "title": "The Great Emu War", "description": "The bizarre true story of Australia's military operation against birds." },
+            { "title": "The Dancing Plague of 1518", "description": "The mysterious historical event where hundreds of people danced uncontrollably for days." },
+            { "title": "The Voynich Manuscript", "description": "A centuries-old, illustrated codex written in an unknown and undeciphered script." },
+            { "title": "Ball Lightning", "description": "Investigating the rare and unexplained atmospheric phenomenon of luminous spheres." }
+        ]
+    },
     "article": {
         "creating": "Creating article...",
         "error": {
@@ -71,6 +97,15 @@
             "status": {
                 "start": "Starting video generation..."
             }
+        },
+        "export": {
+            "title": "Export Article",
+            "formats": {
+                "txt": "as Text (.txt)",
+                "md": "as Markdown (.md)",
+                "html": "as HTML (.html)",
+                "json": "as JSON (.json)"
+            }
         }
     },
     "summary": {
@@ -100,7 +135,8 @@
             "What are the key concepts?",
             "Explain the conclusion"
         ],
-        "systemInstruction": "You are Athena, a helpful and insightful AI knowledge assistant. Your goal is to help the user understand the provided article. You have been given the full text of an article with the following content, and all user questions should be answered in relation to it. Do not refer to this preamble in your responses. Always speak in English. Article content: \"\"\"{{articleContext}}\"\"\""
+        "previousArticleContextPreamble": "\n\nFor additional context, the user has recently viewed these articles. Refer to them ONLY if the user asks a comparative question: \n\"\"\"{{context}}\"\"\"",
+        "systemInstruction": "You are Athena, a helpful and insightful AI knowledge assistant. Your goal is to help the user understand the provided article. You have been given the full text of an article with the following content, and all user questions should be answered in relation to it. Do not refer to this preamble in your responses. Always speak in English. Article content: \"\"\"{{articleContext}}\"\"\"{{previousArticlesContext}}"
     },
     "interaction": {
         "toolbarLabel": "Text interaction tools",
@@ -147,7 +183,8 @@
             "title": "Settings"
         },
         "help": {
-            "title": "Help"
+            "title": "Help",
+            "aboutApp": "About the App"
         },
         "noEntries": "No entries.",
         "deleteEntry": "Delete entry",
@@ -252,8 +289,9 @@
         "title": "Codex Help & Guide",
         "close": "Close help window",
         "tab": {
-            "tutorial": "Step-by-step Guide",
-            "glossary": "Knowledge Base & Glossary"
+            "tutorial": "Guide",
+            "glossary": "Glossary",
+            "about": "About"
         },
         "tutorialContent": {
             "intro": "Welcome to Codex! This guide will walk you through the core features to help you get the most out of your knowledge exploration.",
@@ -327,6 +365,24 @@
                     ]
                 }
             ]
+        },
+        "aboutContent": {
+            "intro": "Codex is not just an information tool; it's an active, AI-powered knowledge partner that not only informs but also inspires, reveals connections, and turns learning into an immersive experience.",
+            "pillars": {
+                "title": "Three Core Pillars",
+                "personalization": "**Personalization:** Customize Codex to your preferences. Change the accent color, font, text size, and AI behavior.",
+                "visualization": "**Visualization:** Each article section can be brought to life with unique, AI-generated images and videos.",
+                "interconnection": "**Interconnection:** The Synapse Graph and 'Cosmic Leap' help you discover unexpected connections between topics."
+            },
+            "tech": {
+                "title": "Technology",
+                "p1": "Codex is powered by React, TypeScript, and the Google Gemini API for state-of-the-art AI capabilities. All your data is stored securely in your browser's IndexedDB."
+            },
+            "links": {
+                "title": "Links",
+                "aiStudio": "Live Demo on Google AI Studio",
+                "github": "View the Code on GitHub"
+            }
         }
     },
     "entry": {
@@ -377,7 +433,8 @@
         "videoGeneratedSuccess": "Video generated successfully!",
         "findingConnection": "Finding a surprising connection...",
         "cosmicLeapFound": "Cosmic Leap found: {{topic}}",
-        "snapshotRestored": "Restored snapshot \"{{name}}\"."
+        "snapshotRestored": "Restored snapshot \"{{name}}\".",
+        "exportArticleSuccess": "Article '{{title}}' exported successfully."
     },
     "errors": {
         "unknown": "An unknown error occurred.",

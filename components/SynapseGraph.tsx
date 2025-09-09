@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { RelatedTopic } from '../types';
 import { CosmicLeapIcon } from './IconComponents';
@@ -32,21 +33,26 @@ const SynapseGraph: React.FC<SynapseGraphProps> = ({ currentTopic, relatedTopics
          </button>
       </div>
 
-      {/* Mobile List View */}
-      <div className="md:hidden w-full max-w-lg mx-auto space-y-4">
-        {relatedTopics.map((topic) => (
-            <div key={topic.name} className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 transition-transform active:scale-[0.99]">
-                <button 
-                    onClick={() => onTopicClick(topic.name)}
-                    className="w-full text-left font-semibold text-accent text-lg hover:underline focus:outline-none focus:underline"
-                >
-                    {topic.name}
-                </button>
-                <p className="mt-2 text-gray-400 text-sm italic">"{topic.relevance}"</p>
-                <p className="mt-2 text-gray-300 text-sm">{topic.quickSummary}</p>
-            </div>
-        ))}
+      {/* Mobile Graphical List View */}
+      <div className="md:hidden w-full max-w-lg mx-auto">
+          <div className="relative border-l-2 border-gray-700 ml-4 pl-8 space-y-6">
+              {relatedTopics.map((topic) => (
+                  <div key={topic.name} className="relative">
+                      <div className="absolute -left-[44px] top-1/2 -translate-y-1/2 w-4 h-4 bg-gray-800 border-2 border-accent/50 rounded-full"></div>
+                      <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 transition-all hover:border-accent/50 active:scale-[0.99]">
+                          <button 
+                              onClick={() => onTopicClick(topic.name)}
+                              className="w-full text-left font-semibold text-accent text-lg hover:underline focus:outline-none focus:underline"
+                          >
+                              {topic.name}
+                          </button>
+                          <p className="mt-1 text-gray-400 text-xs italic">"{topic.relevance}"</p>
+                      </div>
+                  </div>
+              ))}
+          </div>
       </div>
+
 
       {/* Desktop Graph View */}
       <div className="hidden md:relative md:flex items-center justify-center p-8 min-h-[400px]">
@@ -55,9 +61,12 @@ const SynapseGraph: React.FC<SynapseGraphProps> = ({ currentTopic, relatedTopics
           </div>
 
           {relatedTopics.map((topic, index) => {
-              const angle = (index / relatedTopics.length) * 2 * Math.PI;
-              const x = Math.cos(angle) * 320; 
-              const y = Math.sin(angle) * 200;
+              const numTopics = relatedTopics.length;
+              const radiusX = numTopics > 5 ? 360 : 320;
+              const radiusY = numTopics > 5 ? 240 : 200;
+              const angle = (index / numTopics) * 2 * Math.PI;
+              const x = Math.cos(angle) * radiusX;
+              const y = Math.sin(angle) * radiusY;
 
               const centralNodeRadius = 96; // 192px / 2
               const satelliteNodeRadius = 64; // 128px / 2
@@ -74,10 +83,16 @@ const SynapseGraph: React.FC<SynapseGraphProps> = ({ currentTopic, relatedTopics
                             transform: `translate(${lineOffsetX}px, ${lineOffsetY}px) rotate(${angle}rad)` 
                         }} 
                     />
-                    <div className="absolute top-1/2 left-1/2 z-10 group" style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` }} >
+                    <div 
+                        className="absolute top-1/2 left-1/2 z-10 group animate-float" 
+                        style={{ 
+                            transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
+                            animationDelay: `${index * 0.4}s`
+                        }}
+                    >
                       <button 
                         onClick={() => onTopicClick(topic.name)}
-                        className="bg-gray-800 border-2 border-gray-600 text-gray-200 rounded-full w-32 h-32 flex items-center justify-center text-center p-2 hover:border-accent hover:scale-105 focus:outline-none focus:border-accent focus:scale-105 active:scale-100 transition-all duration-300 shadow-lg"
+                        className="bg-gray-800 border-2 border-gray-600 text-gray-200 rounded-full w-32 h-32 flex items-center justify-center text-center p-2 hover:border-accent focus:outline-none focus:border-accent transition-all duration-300 shadow-lg hover:animate-pulse focus:animate-pulse"
                       >
                           <span className="font-semibold text-sm">{topic.name}</span>
                       </button>

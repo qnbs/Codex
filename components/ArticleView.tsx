@@ -1,32 +1,36 @@
-
-
-
 import React, { useState, useRef, useEffect, useMemo, useContext, useCallback } from 'react';
 import { ArticleData, StarterTopic, AppSettings, TextSize, SummaryType, TimelineEvent } from '../types';
-import { BookOpenIcon, SparklesIcon, TextSelectIcon, WandIcon, ImageIcon, CloseIcon, ClockIcon, ReloadIcon, ClipboardCopyIcon, TimelineIcon, SummarizeIcon, KeyPointsIcon, Eli5Icon, AnalogyIcon, PathIcon, PlusIcon, BookmarkIcon, VideoCameraIcon } from './IconComponents';
+import { BookOpenIcon, SparklesIcon, TextSelectIcon, WandIcon, ImageIcon, CloseIcon, ClockIcon, ReloadIcon, ClipboardCopyIcon, TimelineIcon, SummarizeIcon, KeyPointsIcon, Eli5Icon, AnalogyIcon, PathIcon, PlusIcon, BookmarkIcon, VideoCameraIcon, DownloadIcon, ExclamationTriangleIcon } from './IconComponents';
 import LoadingSpinner from './LoadingSpinner';
 import { explainOrDefine, generateSummary, constructImagePrompt } from '../services/geminiService';
-import { SettingsContext, UserDataContext } from '../context/AppContext';
+import { SettingsContext, UserDataContext, NotificationContext } from '../context/AppContext';
 import { useLocalization } from '../context/LocalizationContext';
 
-const WelcomeScreen = React.memo(({ starterTopics, onTopicClick, isLoadingTopics }: { starterTopics: StarterTopic[], onTopicClick: (topic: string) => void, isLoadingTopics: boolean }) => {
+const WelcomeScreen = React.memo(({ starterTopics, onTopicClick, isLoadingTopics }: { starterTopics: { [key: string]: StarterTopic[] }, onTopicClick: (topic: string) => void, isLoadingTopics: boolean }) => {
     const { t } = useLocalization();
     return (
         <div className="text-center p-8 flex flex-col items-center justify-center h-full">
             <SparklesIcon className="w-16 h-16 text-accent mb-6"/>
             <h1 className="text-4xl font-bold text-white mb-2">{t('welcome.title')}</h1>
-            <p className="text-lg text-gray-400 max-w-2xl mb-8">{t('welcome.subtitle')}</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl">
+            <p className="text-lg text-gray-400 max-w-2xl mb-12">{t('welcome.subtitle')}</p>
+            <div className="w-full max-w-5xl space-y-8">
                 {isLoadingTopics ? (
                     Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="bg-gray-800/50 rounded-lg p-4 h-24 animate-pulse"></div>
+                        <div key={i} className="bg-gray-800/50 rounded-lg p-4 h-32 animate-pulse"></div>
                     ))
                 ) : (
-                    starterTopics.map(topic => (
-                        <button key={topic.title} onClick={() => onTopicClick(topic.title)} className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 text-left hover:bg-gray-700/50 hover:border-accent/50 transition-all duration-300 active:scale-[0.98]">
-                            <h3 className="font-bold text-accent">{topic.title}</h3>
-                            <p className="text-sm text-gray-400 mt-1">{topic.description}</p>
-                        </button>
+                    Object.entries(starterTopics).map(([category, topics]) => (
+                        <div key={category}>
+                            <h2 className="text-2xl font-bold text-accent mb-4 text-left">{category}</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {topics.map(topic => (
+                                     <button key={topic.title} onClick={() => onTopicClick(topic.title)} className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 text-left hover:bg-gray-700/50 hover:border-accent/50 transition-all duration-300 active:scale-[0.98]">
+                                        <h3 className="font-bold text-accent">{topic.title}</h3>
+                                        <p className="text-sm text-gray-400 mt-1">{topic.description}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     ))
                 )}
             </div>
@@ -327,6 +331,105 @@ const AddToPathDropdown = ({ articleTitle }: { articleTitle: string }) => {
     )
 }
 
+const ExportDropdown = ({ article }: { article: ArticleData }) => {
+    const { t } = useLocalization();
+    const { addNotification } = useContext(NotificationContext)!;
+    
+    const handleExport = (format: 'txt' | 'md' | 'html' | 'json') => {
+        let content = '';
+        let mimeType = '';
+        const filename = `${article.title.replace(/ /g, '_')}.${format}`;
+
+        switch (format) {
+            case 'txt':
+                mimeType = 'text/plain';
+                content = [
+                    article.title,
+                    `\n${article.introduction}\n`,
+                    ...article.sections.map(s => `\n${s.heading}\n\n${s.content}\n`),
+                    `\n${t('article.conclusion')}\n\n${article.conclusion}`
+                ].join('\n');
+                break;
+            case 'md':
+                mimeType = 'text/markdown';
+                 content = [
+                    `# ${article.title}`,
+                    `\n${article.introduction}\n`,
+                    ...article.sections.map(s => `## ${s.heading}\n\n${s.content}\n`),
+                    `\n## ${t('article.conclusion')}\n\n${article.conclusion}`
+                ].join('\n');
+                break;
+            case 'json':
+                mimeType = 'application/json';
+                content = JSON.stringify(article, null, 2);
+                break;
+            case 'html':
+                mimeType = 'text/html';
+                const styles = `
+                    <style>
+                        body { font-family: sans-serif; line-height: 1.6; color: #eee; background-color: #121212; padding: 2em; }
+                        h1 { color: #f59e0b; }
+                        h2 { border-bottom: 1px solid #444; padding-bottom: 5px; margin-top: 2em; }
+                        img { max-width: 100%; height: auto; border-radius: 8px; margin: 1em 0; }
+                    </style>
+                `;
+                const body = `
+                    <h1>${article.title}</h1>
+                    <p>${article.introduction}</p>
+                    ${article.sections.map(s => `
+                        <section>
+                            <h2>${s.heading}</h2>
+                            ${s.imageUrl ? `<img src="${s.imageUrl}" alt="${s.imagePrompt || s.heading}">` : ''}
+                            <p>${s.content.replace(/\n/g, '<br>')}</p>
+                        </section>
+                    `).join('')}
+                    <h2>${t('article.conclusion')}</h2>
+                    <p>${article.conclusion}</p>
+                `;
+                content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${article.title}</title>${styles}</head><body>${body}</body></html>`;
+                break;
+        }
+
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        addNotification(t('notifications.exportArticleSuccess', { title: article.title }), 'success');
+    };
+
+    const formats = {
+        txt: t('article.export.formats.txt'),
+        md: t('article.export.formats.md'),
+        html: t('article.export.formats.html'),
+        json: t('article.export.formats.json'),
+    };
+    
+    return (
+        <div className="relative group">
+            <button className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors" title={t('article.export.title')} aria-label={t('article.export.title')}>
+                <DownloadIcon className="w-6 h-6" />
+            </button>
+            <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-2 z-20 opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200">
+                {Object.entries(formats).map(([key, label]) => (
+                    <button
+                        key={key}
+                        onClick={() => handleExport(key as 'txt' | 'md' | 'html' | 'json')}
+                        className="w-full text-left px-3 py-1.5 text-sm text-gray-300 rounded-md hover:bg-gray-700"
+                    >
+                        {label}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+
 const TextInteractionModal = ({ text, mode, onClose, position }: { text: string, mode: 'Define' | 'Explain' | 'Visualize' | null, onClose: () => void, position: { top: number, left: number } }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [result, setResult] = useState<string>('');
@@ -434,7 +537,7 @@ interface ArticleViewProps {
   isLoading: boolean;
   error: string | null;
   onRetry: () => void;
-  starterTopics: StarterTopic[];
+  starterTopics: { [key: string]: StarterTopic[] };
   isLoadingTopics: boolean;
   onTopicClick: (topic: string) => void;
   onGenerateImage: (sectionIndex: number) => void;
@@ -504,9 +607,10 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, isLoading, error, on
 
     if (error) {
         return (
-            <div className="text-center p-8">
+            <div className="text-center p-8 flex flex-col items-center justify-center min-h-[400px] bg-gray-800/30 rounded-lg">
+                <ExclamationTriangleIcon className="w-16 h-16 text-red-400 mb-4"/>
                 <h2 className="text-xl font-bold text-red-400 mb-2">{t('article.error.title')}</h2>
-                <p className="text-gray-400 mb-6">{error}</p>
+                <p className="text-gray-400 mb-6 max-w-md">{error}</p>
                 <button onClick={onRetry} className="flex items-center justify-center gap-2 mx-auto px-4 py-2 bg-accent text-accent-contrast font-semibold rounded-full hover:bg-accent-hover transition-colors">
                     <ReloadIcon className="w-5 h-5"/>
                     {t('common.retry')}
@@ -526,10 +630,11 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, isLoading, error, on
     };
 
     return (
-        <div className={`prose prose-invert max-w-none prose-p:text-gray-300 prose-headings:text-gray-100 ${textSizeClass[settings.textSize]}`}>
+        <div className={`prose prose-invert max-w-none prose-p:text-gray-300 prose-headings:text-gray-100 prose-h2:mt-12 prose-h2:mb-4 prose-h2:border-b prose-h2:border-gray-700/80 prose-h2:pb-3 ${textSizeClass[settings.textSize]}`}>
             <div className="flex justify-between items-start">
                 <h1 className="text-4xl font-bold mb-2">{article.title}</h1>
-                <div className="flex items-center gap-2 not-prose">
+                <div className="flex items-center gap-1 not-prose">
+                     <ExportDropdown article={article} />
                      <button 
                         onClick={() => toggleBookmark(article.title)} 
                         className={`p-2 rounded-full transition-colors hover:bg-gray-700/80 ${isBookmarked ? 'text-accent hover:text-accent-hover' : 'text-gray-400 hover:text-white'}`} 

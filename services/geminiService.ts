@@ -283,7 +283,8 @@ export const getSerendipitousTopic = async (currentTopic: string, locale: Locale
     }
 }
 
-export const getStarterTopics = (t: (key: string, params?: { [key: string]: string | number | undefined }) => any): StarterTopic[] => {
+// FIX: Updated the return type to match the categorized structure expected by the UI.
+export const getStarterTopics = (t: (key: string, params?: { [key: string]: string | number | undefined }) => any): { [key: string]: StarterTopic[] } => {
     return t('starterTopics');
 };
 
@@ -329,8 +330,13 @@ export const getSuggestedQuestions = async (articleText: string, locale: Locale,
     }
 };
 
-export const startChat = (articleContext: string, locale: Locale, t: (key: string, params?: { [key: string]: string | number | undefined }) => any): Chat => {
-    const systemInstruction = t('athena.systemInstruction', { articleContext });
+export const startChat = (
+    articleContext: string, 
+    locale: Locale, 
+    t: (key: string, params?: { [key: string]: string | number | undefined }) => any,
+    previousArticlesContext: string = ''
+): Chat => {
+    const systemInstruction = t('athena.systemInstruction', { articleContext, previousArticlesContext });
     return ai.chats.create({
         model: 'gemini-2.5-flash',
         config: {

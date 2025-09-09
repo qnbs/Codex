@@ -1,15 +1,12 @@
-
-
-
 import React, { useState, useCallback, useEffect, useRef, useContext, useMemo } from 'react';
 import SearchBar from './components/SearchBar';
 import ArticleView from './components/ArticleView';
 import AthenaCopilot from './components/AthenaCopilot';
 import SynapseGraph from './components/SynapseGraph';
 import { ArticleData, RelatedTopic, StarterTopic, AppSettings, AccentColor, FontFamily, ArticleLength, ImageStyle, TextSize, LearningPath, SessionSnapshot, ChatMessage, CodexBackupData, Notification, NotificationType, Language, UserDataContextType, StoredImage } from './types';
-import { generateArticleContent, getRelatedTopics, generateImageForSection, getSerendipitousTopic, getStarterTopics, startChat, editImage, generateVideoForSection } from './services/geminiService';
+import { generateArticleContent, getRelatedTopics, generateImageForSection, getSerendipitousTopic, getStarterTopics, startChat, editImage, generateVideoForSection, constructImagePrompt } from './services/geminiService';
 import * as db from './services/dbService';
-import { HistoryIcon, BookmarkIcon, CogIcon, CloseIcon, PathIcon, CameraIcon, TrashIcon, UploadIcon, DownloadIcon, QuestionMarkCircleIcon, SparklesIcon, CommandIcon, ImageIcon, SearchIcon, MoreVerticalIcon, ClipboardCopyIcon } from './components/IconComponents';
+import { HistoryIcon, BookmarkIcon, CogIcon, CloseIcon, PathIcon, CameraIcon, TrashIcon, UploadIcon, DownloadIcon, QuestionMarkCircleIcon, SparklesIcon, CommandIcon, ImageIcon, SearchIcon, MoreVerticalIcon, ClipboardCopyIcon, BookOpenIcon } from './components/IconComponents';
 import SettingsModal from './components/SettingsModal';
 import HelpGuide from './components/HelpGuide';
 import EntryPortal from './components/EntryPortal';
@@ -96,7 +93,7 @@ const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
     return (
         <NotificationContext.Provider value={{ addNotification }}>
             {children}
-            <div className="fixed bottom-4 right-4 z-[100] w-full max-w-xs space-y-2">
+            <div className="fixed bottom-4 right-4 sm:bottom-4 sm:right-4 md:bottom-auto md:top-24 md:right-4 z-[100] w-full max-w-xs space-y-2">
                 {notifications.map(n => {
                     const typeClasses = {
                         success: 'bg-emerald-500 border-emerald-400',
@@ -383,7 +380,7 @@ const useUserData = (
             URL.revokeObjectURL(url);
             addNotification(t('notifications.exportSuccess'), 'success');
         } catch (error) {
-             addNotification('Failed to export data.', 'error');
+             addNotification(t('errors.importFailed'), 'error');
         }
     }, [addNotification, t]);
 
@@ -503,7 +500,7 @@ const HeaderPanel = ({ title, icon: Icon, children, isOpen, onClose, onClearAll 
                     </div>
                     <button onClick={onClose} className="p-1 text-gray-400 hover:text-white" aria-label={t('common.close')}><CloseIcon className="w-6 h-6"/></button>
                 </div>
-                <div className="flex-grow overflow-y-auto p-4 space-y-2">
+                <div className="flex-grow overflow-y-auto p-4">
                     {children}
                 </div>
                 <div className="p-4 border-t border-gray-700">
@@ -578,6 +575,13 @@ const MobileHeaderMenu = ({ togglePanel, setCommandPaletteOpen }: { togglePanel:
     );
 };
 
+const EmptyState = ({ icon: Icon, text }: { icon: React.FC<{className?: string}>, text: string }) => (
+    <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 p-4">
+        <Icon className="w-16 h-16 mb-4"/>
+        <p className="text-sm">{text}</p>
+    </div>
+);
+
 interface InitialUserData {
     history: string[];
     bookmarks: string[];
@@ -591,7 +595,8 @@ function CodexApp({ initialUserData }: { initialUserData: InitialUserData }) {
   const [relatedTopics, setRelatedTopics] = useState<RelatedTopic[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [starterTopics, setStarterTopics] = useState<StarterTopic[]>([]);
+  // FIX: Updated state type to match the categorized data structure expected by the UI.
+  const [starterTopics, setStarterTopics] = useState<{ [key: string]: StarterTopic[] }>({});
   const [isLoadingTopics, setIsLoadingTopics] = useState(true);
   const [generatingImages, setGeneratingImages] = useState<number[]>([]);
   const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
@@ -603,6 +608,7 @@ function CodexApp({ initialUserData }: { initialUserData: InitialUserData }) {
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<StoredImage | null>(null);
   const [isLightboxCopied, setIsLightboxCopied] = useState(false);
+  const [sessionHistory, setSessionHistory] = useState<{ title: string; introduction: string }[]>([]);
   
   const { settings, setSettings } = useContext(SettingsContext)!;
   const { addNotification } = useNotification();
@@ -616,7 +622,7 @@ function CodexApp({ initialUserData }: { initialUserData: InitialUserData }) {
       initialUserData, article, currentTopic, messages, relatedTopics, closeAllPanels, handleTriggerImport
   );
   
-  const { history, bookmarks, imageLibrary, addImageToLibrary } = userData;
+  const { history, bookmarks, imageLibrary, addImageToLibrary, learningPaths, sessionSnapshots } = userData;
 
   const isBookmarked = useMemo(() => {
     if (!article) return false;
@@ -634,15 +640,23 @@ function CodexApp({ initialUserData }: { initialUserData: InitialUserData }) {
   }, [article]);
   
   useEffect(() => {
-      if (article) {
-          const welcomeMessage = t('athena.welcomeMessage', { title: article.title });
-          setMessages([{ role: 'model', parts: [{ text: welcomeMessage }] }]);
-          setChat(startChat(fullArticleText, locale, t));
-      } else {
-          setMessages([]);
-          setChat(null);
-      }
-  }, [article, fullArticleText, locale, t]);
+    if (article) {
+        const previousArticles = sessionHistory.slice(0,3);
+        let previousArticlesContext = '';
+
+        if (previousArticles.length > 0) {
+            const contextText = previousArticles.map(article => `Topic: "${article.title}", Summary: "${article.introduction}"`).join('; ');
+            previousArticlesContext = t('athena.previousArticleContextPreamble', { context: contextText });
+        }
+
+        const welcomeMessage = t('athena.welcomeMessage', { title: article.title });
+        setMessages([{ role: 'model', parts: [{ text: welcomeMessage }] }]);
+        setChat(startChat(fullArticleText, locale, t, previousArticlesContext));
+    } else {
+        setMessages([]);
+        setChat(null);
+    }
+  }, [article, fullArticleText, locale, t, sessionHistory]);
 
   useEffect(() => {
     setIsLoadingTopics(true);
@@ -662,11 +676,8 @@ function CodexApp({ initialUserData }: { initialUserData: InitialUserData }) {
   }, []);
 
   useEffect(() => {
-    // This effect runs when 'article' changes. The cleanup function
-    // will be executed on the *previous* state of 'article' before the
-    // new state is set, or when the component unmounts.
     return () => {
-        if (article) { // Check if there was a previous article
+        if (article) { 
             article.sections.forEach(section => {
                 if (section.videoUrl && section.videoUrl.startsWith('blob:')) {
                     URL.revokeObjectURL(section.videoUrl);
@@ -674,7 +685,7 @@ function CodexApp({ initialUserData }: { initialUserData: InitialUserData }) {
             });
         }
     };
-  }, [article]); // Dependency array ensures this runs only when 'article' state changes
+  }, [article]);
 
   const handleSearch = useCallback(async (topic: string, isRetry = false) => {
     if (isLoading) return;
@@ -701,6 +712,15 @@ function CodexApp({ initialUserData }: { initialUserData: InitialUserData }) {
         setArticle(articleData);
         setRelatedTopics(relatedTopicsData);
         
+        setSessionHistory(prev => {
+            const isAlreadyPresent = prev.some(item => item.title === articleData.title);
+            if (isAlreadyPresent) {
+                return prev;
+            }
+            const newHistory = [{ title: articleData.title, introduction: articleData.introduction }, ...prev];
+            return newHistory.slice(0, 3);
+        });
+
         if (!history.includes(topic)) {
             db.addHistoryItem(topic).then(() => {
                 userData.setHistory(prev => [topic, ...prev].slice(0, 100));
@@ -735,374 +755,325 @@ function CodexApp({ initialUserData }: { initialUserData: InitialUserData }) {
     }
   }, [currentTopic, handleSearch, addNotification, t, locale]);
 
-  const handleGenerateImage = useCallback((sectionIndex: number) => {
-    if (generatingImages.includes(sectionIndex) || imageQueue.includes(sectionIndex)) {
-        return;
+  const handleGenerateImage = useCallback(async (sectionIndex: number) => {
+    if (!article || generatingImages.includes(sectionIndex)) return;
+
+    const section = article.sections[sectionIndex];
+    if (!section.imagePrompt) return;
+
+    setGeneratingImages(prev => [...prev, sectionIndex]);
+
+    try {
+        const imageUrl = await generateImageForSection(section.imagePrompt, settings, locale);
+        setArticle(prevArticle => {
+            if (!prevArticle) return null;
+            const newSections = [...prevArticle.sections];
+            newSections[sectionIndex] = { ...newSections[sectionIndex], imageUrl };
+            return { ...prevArticle, sections: newSections };
+        });
+        addImageToLibrary({
+            imageUrl,
+            prompt: section.imagePrompt,
+            topic: article.title,
+        });
+    } catch (error: any) {
+        addNotification(error.message || t('errors.imageGenSectionFailed', { section: section.heading }), 'error');
+    } finally {
+        setGeneratingImages(prev => prev.filter(i => i !== sectionIndex));
+        setImageQueue(prev => prev.filter(i => i !== sectionIndex));
     }
-    setImageQueue(prev => [...prev, sectionIndex]);
-  }, [generatingImages, imageQueue]);
+  }, [article, generatingImages, settings, addNotification, t, locale, addImageToLibrary]);
+  
+  useEffect(() => {
+    if (settings.autoLoadImages && article && generatingImages.length === 0 && imageQueue.length === 0) {
+        const missingImageIndices = article.sections
+            .map((s, i) => (s.imagePrompt && !s.imageUrl ? i : -1))
+            .filter(i => i !== -1);
+        if (missingImageIndices.length > 0) {
+            setImageQueue(missingImageIndices);
+        }
+    }
+  }, [article, settings.autoLoadImages, generatingImages.length, imageQueue.length]);
+
+  useEffect(() => {
+    if (imageQueue.length > 0 && generatingImages.length === 0) {
+      handleGenerateImage(imageQueue[0]);
+    }
+  }, [imageQueue, generatingImages, handleGenerateImage]);
 
   const handleGenerateAllImages = useCallback(() => {
     if (!article) return;
     const missingImageIndices = article.sections
-        .map((_, index) => index)
-        .filter(index => {
-            const section = article.sections[index];
-            return section.imagePrompt && !section.imageUrl;
-        });
-
+        .map((s, i) => (s.imagePrompt && !s.imageUrl ? i : -1))
+        .filter(i => i !== -1);
+    
     if (missingImageIndices.length === 0) {
-        if (!generatingImages.length && !imageQueue.length) {
-            addNotification(t('notifications.allImagesGenerated'), 'info');
-        }
+        addNotification(t('notifications.allImagesGenerated'), 'info');
+        return;
+    }
+    
+    setImageQueue(prev => [...missingImageIndices.filter(i => !prev.includes(i))]);
+  }, [article, addNotification, t]);
+
+  const handleGenerateVideo = useCallback(async (sectionIndex: number) => {
+    if (!article || generatingVideoInfo.index !== null) return;
+
+    const section = article.sections[sectionIndex];
+    if (!section.imagePrompt) {
+        addNotification(t('errors.noPromptForVideo'), 'error');
         return;
     }
 
-    setImageQueue(prevQueue => {
-        const newIndices = missingImageIndices.filter(
-            index => !prevQueue.includes(index) && !generatingImages.includes(index)
-        );
-        return [...prevQueue, ...newIndices];
-    });
-  }, [article, generatingImages, imageQueue, addNotification, t]);
+    setGeneratingVideoInfo({ index: sectionIndex, status: t('article.video.status.start') });
+
+    try {
+        const onStatusUpdate = (status: string) => {
+             setGeneratingVideoInfo({ index: sectionIndex, status });
+        };
+        const videoUrl = await generateVideoForSection(section.imagePrompt, settings, locale, onStatusUpdate);
+        
+        setArticle(prevArticle => {
+            if (!prevArticle) return null;
+            const newSections = [...prevArticle.sections];
+            newSections[sectionIndex] = { ...newSections[sectionIndex], videoUrl };
+            return { ...prevArticle, sections: newSections };
+        });
+        addNotification(t('notifications.videoGeneratedSuccess'), 'success');
+    } catch (error: any) {
+        addNotification(error.message || t('errors.videoGenerationFailed'), 'error');
+    } finally {
+        setGeneratingVideoInfo({ index: null, status: null });
+    }
+  }, [article, generatingVideoInfo.index, settings, addNotification, t, locale]);
+
+  const handleEditImage = useCallback(async (sectionIndex: number, prompt: string) => {
+    if (!article || editingImageIndex !== null) return;
+
+    const section = article.sections[sectionIndex];
+    const originalImageUrl = section.imageUrl;
+    if (!originalImageUrl) return;
+
+    setEditingImageIndex(sectionIndex);
+    try {
+        const newImageUrl = await editImage(originalImageUrl, prompt, locale);
+        setArticle(prevArticle => {
+            if (!prevArticle) return null;
+            const newSections = [...prevArticle.sections];
+            newSections[sectionIndex] = { ...newSections[sectionIndex], imageUrl: newImageUrl };
+            return { ...prevArticle, sections: newSections };
+        });
+        addImageToLibrary({
+            imageUrl: newImageUrl,
+            prompt: t('panels.imageLibrary.editedPrompt', { editPrompt: prompt, originalPrompt: section.imagePrompt }),
+            topic: article.title,
+        });
+        addNotification(t('notifications.imageEditedSuccess'), 'success');
+    } catch (error: any) {
+        addNotification(error.message || t('errors.imageEditFailed'), 'error');
+    } finally {
+        setEditingImageIndex(null);
+    }
+  }, [article, editingImageIndex, addImageToLibrary, addNotification, t, locale]);
   
-    const handleEditImage = useCallback(async (sectionIndex: number, editPrompt: string) => {
-        if (!article || !article.sections[sectionIndex]?.imageUrl) return;
-
-        setEditingImageIndex(sectionIndex);
-        try {
-            const originalImageUrl = article.sections[sectionIndex].imageUrl!;
-            const newImageUrl = await editImage(originalImageUrl, editPrompt, locale);
-            
-            addImageToLibrary({
-                imageUrl: newImageUrl,
-                prompt: t('panels.imageLibrary.editedPrompt', {
-                    editPrompt: editPrompt,
-                    originalPrompt: article.sections[sectionIndex].imagePrompt
-                }),
-                topic: article.title,
-            });
-            
-            setArticle(prevArticle => {
-                if (!prevArticle) return null;
-                const newSections = [...prevArticle.sections];
-                newSections[sectionIndex] = { ...newSections[sectionIndex], imageUrl: newImageUrl };
-                return { ...prevArticle, sections: newSections };
-            });
-
-            addNotification(t('notifications.imageEditedSuccess'), 'success');
-
-        } catch (error: any) {
-            addNotification(error.message || t('errors.imageEditFailed'), 'error');
-        } finally {
-            setEditingImageIndex(null);
-        }
-    }, [article, locale, addNotification, t, addImageToLibrary]);
-
-    const handleGenerateVideo = useCallback(async (sectionIndex: number) => {
-        if (!article || generatingVideoInfo.index !== null) return;
-        
-        const prompt = article.sections[sectionIndex].imagePrompt;
-        if (!prompt) {
-            addNotification(t('errors.noPromptForVideo'), 'error');
-            return;
-        }
-
-        setGeneratingVideoInfo({ index: sectionIndex, status: t('article.video.status.start') });
-        try {
-            const videoUrl = await generateVideoForSection(prompt, settings, locale, (status) => {
-                setGeneratingVideoInfo({ index: sectionIndex, status });
-            });
-
-            setArticle(prevArticle => {
-                if (!prevArticle) return null;
-                const newSections = [...prevArticle.sections];
-                newSections[sectionIndex] = { ...newSections[sectionIndex], videoUrl };
-                return { ...prevArticle, sections: newSections };
-            });
-
-            addNotification(t('notifications.videoGeneratedSuccess'), 'success');
-
-        } catch (error: any) {
-            addNotification(error.message || t('errors.videoGenerationFailed'), 'error');
-        } finally {
-            setGeneratingVideoInfo({ index: null, status: null });
-        }
-    }, [article, generatingVideoInfo.index, settings, locale, addNotification, t]);
-
-  useEffect(() => {
-    if (generatingImages.length > 0 || imageQueue.length === 0) {
-        return;
-    }
-
-    const processQueue = async () => {
-        const nextIndex = imageQueue[0];
-        
-        if (article && article.sections[nextIndex]) {
-            setGeneratingImages([nextIndex]);
-
-            try {
-                const prompt = article.sections[nextIndex].imagePrompt;
-                if (!prompt) throw new Error("No prompt for this section.");
-                
-                const imageUrl = await generateImageForSection(prompt, settings, locale);
-
-                addImageToLibrary({
-                    imageUrl,
-                    prompt: prompt,
-                    topic: article.title,
-                });
-
-                setArticle(prevArticle => {
-                    if (!prevArticle) return null;
-                    const newSections = [...prevArticle.sections];
-                    newSections[nextIndex] = { ...newSections[nextIndex], imageUrl };
-                    return { ...prevArticle, sections: newSections };
-                });
-            } catch (error: any) {
-                addNotification(error.message || t('errors.imageGenSectionFailed', { section: article.sections[nextIndex].heading }), 'error');
-            } finally {
-                setImageQueue(prev => prev.slice(1));
-                setGeneratingImages([]);
-            }
-        } else {
-            setImageQueue(prev => prev.slice(1));
-        }
-    };
-
-    processQueue();
-
-  }, [imageQueue, generatingImages, article, settings, locale, addNotification, t, addImageToLibrary]);
-
-  useEffect(() => {
-    if (settings.autoLoadImages && article && !isLoading) {
-        const hasMissingImages = article.sections.some(s => s.imagePrompt && !s.imageUrl);
-        if (hasMissingImages && generatingImages.length === 0 && imageQueue.length === 0) {
-            handleGenerateAllImages();
-        }
-    }
-  }, [settings.autoLoadImages, article, isLoading, handleGenerateAllImages, generatingImages.length, imageQueue.length]);
-
   const togglePanel = (panel: string) => {
-      setActivePanel(prev => (prev === panel ? null : panel));
+    setActivePanel(prev => (prev === panel ? null : panel));
   };
   
-  const handleRestoreSnapshot = useCallback((snapshot: SessionSnapshot) => {
-      setCurrentTopic(snapshot.topic);
-      setArticle(snapshot.article);
-      setRelatedTopics(snapshot.relatedTopics);
-      setMessages(snapshot.chatHistory);
-      closeAllPanels();
-      addNotification(t('notifications.snapshotRestored', { name: snapshot.name }), 'success');
-  }, [closeAllPanels, addNotification, t]);
-
-  const handleCopyLightboxPrompt = useCallback(() => {
-    if (!lightboxImage) return;
-    navigator.clipboard.writeText(lightboxImage.prompt);
-    setIsLightboxCopied(true);
-    setTimeout(() => setIsLightboxCopied(false), 2000);
-  }, [lightboxImage]);
-
-  if (!settings.hasOnboarded) {
-    return <EntryPortal onStart={() => setSettings(prev => ({...prev, hasOnboarded: true}))} />;
-  }
+  const handleRestoreSnapshot = (snapshot: SessionSnapshot) => {
+    setCurrentTopic(snapshot.topic);
+    setArticle(snapshot.article);
+    setRelatedTopics(snapshot.relatedTopics);
+    setMessages(snapshot.chatHistory);
+    closeAllPanels();
+    addNotification(t('notifications.snapshotRestored', { name: snapshot.name }), 'success');
+  };
   
+  const commandPaletteActions = {
+      ...userData,
+      onClose: () => setCommandPaletteOpen(false),
+      onSearch: (topic: string) => { handleSearch(topic); setCommandPaletteOpen(false); },
+      togglePanel: (panel: string) => { togglePanel(panel); setCommandPaletteOpen(false); },
+      onSerendipity: handleSerendipity,
+      article: article,
+      onGenerateAllImages: handleGenerateAllImages,
+  };
+  
+  const lightboxCopy = () => {
+      if (lightboxImage) {
+          const promptToCopy = lightboxImage.prompt.startsWith('(Edit)') ? lightboxImage.prompt : constructImagePrompt(lightboxImage.prompt, settings, locale);
+          navigator.clipboard.writeText(promptToCopy);
+          setIsLightboxCopied(true);
+          setTimeout(() => setIsLightboxCopied(false), 2000);
+      }
+  };
+
   return (
     <UserDataContext.Provider value={userData}>
-      <>
-        <div className="min-h-screen">
-            <header className="sticky top-0 z-30 bg-gray-900/80 backdrop-blur-md border-b border-gray-700/50">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-20">
-                    <div className="flex items-center gap-2">
-                         <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-accent">
-                            <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="3"/>
-                            <path d="M23 23C20.5 26.5 15 27.5 11 23C7 18.5 8.5 11.5 14 8.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-                         </svg>
-                         <span className="text-2xl font-bold text-white">Codex</span>
-                    </div>
-                    <div className="w-full max-w-lg mx-4">
-                      <SearchBar onSearch={handleSearch} onSerendipity={handleSerendipity} isLoading={isLoading} />
-                    </div>
-                    <nav className="flex items-center">
-                        {/* --- Desktop Navigation --- */}
-                        <div className="hidden md:flex items-center gap-1.5">
-                            <button onClick={() => setCommandPaletteOpen(true)} title={t('commandPalette.open')} className="flex items-center gap-2 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors">
-                                <CommandIcon className="w-5 h-5" />
-                                <span className="text-sm">⌘K</span>
-                            </button>
-                            <button onClick={() => togglePanel('history')} title={t('panels.history.title')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors"><HistoryIcon className="w-6 h-6"/></button>
-                            <button onClick={() => togglePanel('bookmarks')} title={t('panels.bookmarks.title')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors"><BookmarkIcon className="w-6 h-6"/></button>
-                            <button onClick={() => togglePanel('learningPaths')} title={t('panels.learningPaths.title')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors"><PathIcon className="w-6 h-6"/></button>
-                            <button onClick={() => togglePanel('imageLibrary')} title={t('panels.imageLibrary.title')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors"><ImageIcon className="w-6 h-6"/></button>
-                            <button onClick={() => togglePanel('snapshots')} title={t('panels.snapshots.title')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors"><CameraIcon className="w-6 h-6"/></button>
-                            <button onClick={() => togglePanel('help')} title={t('panels.help.title')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors"><QuestionMarkCircleIcon className="w-6 h-6"/></button>
-                            <button onClick={() => togglePanel('settings')} title={t('panels.settings.title')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors"><CogIcon className="w-6 h-6"/></button>
-                        </div>
-                        
-                        {/* --- Mobile Navigation --- */}
-                        <MobileHeaderMenu togglePanel={togglePanel} setCommandPaletteOpen={setCommandPaletteOpen} />
-                    </nav>
-                </div>
-            </header>
+      {!settings.hasOnboarded && <EntryPortal onStart={() => setSettings(s => ({ ...s, hasOnboarded: true }))} />}
+      
+      <CommandPalette {...commandPaletteActions} isOpen={isCommandPaletteOpen} />
+      
+      <SettingsModal isVisible={activePanel === 'settings'} onClose={closeAllPanels} />
+      <HelpGuide isVisible={activePanel === 'help'} onClose={closeAllPanels} />
+      
+      <MemoizedHeaderPanel title={t('panels.history.title')} icon={HistoryIcon} isOpen={activePanel === 'history'} onClose={closeAllPanels} onClearAll={userData.clearHistory}>
+          {history.length > 0 ? history.map(item => (
+              <div key={item} className="flex justify-between items-center bg-gray-800/50 p-2 rounded-md group">
+                  <button onClick={() => { handleSearch(item); closeAllPanels(); }} className="truncate hover:text-accent">{item}</button>
+                  <button onClick={() => userData.clearHistoryItem(item)} className="p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100" title={t('panels.deleteEntry')}><TrashIcon className="w-4 h-4"/></button>
+              </div>
+          )) : <EmptyState icon={HistoryIcon} text={t('panels.noEntries')} />}
+      </MemoizedHeaderPanel>
+      
+      <MemoizedHeaderPanel title={t('panels.bookmarks.title')} icon={BookmarkIcon} isOpen={activePanel === 'bookmarks'} onClose={closeAllPanels} onClearAll={userData.clearBookmarks}>
+          {bookmarks.length > 0 ? bookmarks.map(item => (
+              <div key={item} className="flex justify-between items-center bg-gray-800/50 p-2 rounded-md group">
+                  <button onClick={() => { handleSearch(item); closeAllPanels(); }} className="truncate hover:text-accent">{item}</button>
+                  <button onClick={() => userData.clearBookmarkItem(item)} className="p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100" title={t('panels.deleteEntry')}><TrashIcon className="w-4 h-4"/></button>
+              </div>
+          )) : <EmptyState icon={BookmarkIcon} text={t('panels.noEntries')} />}
+      </MemoizedHeaderPanel>
 
-            <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:pb-8 pb-24">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                    <div className="lg:col-span-2 bg-gray-800/20 p-6 md:p-8 rounded-lg border border-gray-700/30">
-                       <ArticleView 
-                          article={article} 
-                          isLoading={isLoading} 
-                          error={error} 
-                          onRetry={handleRetry} 
-                          starterTopics={starterTopics}
-                          isLoadingTopics={isLoadingTopics}
-                          onTopicClick={handleSearch}
-                          onGenerateImage={handleGenerateImage}
-                          onGenerateAllImages={handleGenerateAllImages}
-                          onGenerateVideo={handleGenerateVideo}
-                          generatingImages={generatingImages}
-                          generatingVideoInfo={generatingVideoInfo}
-                          onEditImage={handleEditImage}
-                          editingImageIndex={editingImageIndex}
-                          fullArticleText={fullArticleText}
-                          isBookmarked={isBookmarked}
-                       />
-                       <SynapseGraph 
-                          currentTopic={article?.title || ''} 
-                          relatedTopics={relatedTopics} 
-                          onTopicClick={handleSearch} 
-                          onSerendipity={handleSerendipity}
-                          isLoading={isLoading}
-                       />
-                    </div>
-                    <div className="lg:col-span-1">
-                        <AthenaCopilot 
-                          article={article} 
-                          fullArticleText={fullArticleText}
-                          chat={chat}
-                          messages={messages}
-                          setMessages={setMessages}
-                          isLoadingArticle={isLoading}
-                          currentTopic={currentTopic}
-                        />
-                    </div>
-                </div>
-            </main>
-        </div>
-        
-        {/* Side Panels */}
-         <MemoizedHeaderPanel title={t('panels.history.title')} icon={HistoryIcon} isOpen={activePanel === 'history'} onClose={closeAllPanels} onClearAll={userData.clearHistory}>
-            {history.length > 0 ? history.map(item => (
-                <div key={item} className="flex justify-between items-center bg-gray-800/50 p-2 rounded-md group">
-                    <button onClick={() => { handleSearch(item); closeAllPanels(); }} className="font-semibold text-gray-300 hover:text-accent truncate flex-grow text-left">{item}</button>
-                    <button onClick={() => userData.clearHistoryItem(item)} title={t('panels.deleteEntry')} className="ml-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><TrashIcon className="w-4 h-4" /></button>
-                </div>
-            )) : <p className="text-gray-500">{t('panels.noEntries')}</p>}
-        </MemoizedHeaderPanel>
-
-        <MemoizedHeaderPanel title={t('panels.bookmarks.title')} icon={BookmarkIcon} isOpen={activePanel === 'bookmarks'} onClose={closeAllPanels} onClearAll={userData.clearBookmarks}>
-            {bookmarks.length > 0 ? bookmarks.map(item => (
-                <div key={item} className="flex justify-between items-center bg-gray-800/50 p-2 rounded-md group">
-                    <button onClick={() => { handleSearch(item); closeAllPanels(); }} className="font-semibold text-gray-300 hover:text-accent truncate flex-grow text-left">{item}</button>
-                     <button onClick={() => userData.clearBookmarkItem(item)} title={t('panels.deleteEntry')} className="ml-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><TrashIcon className="w-4 h-4" /></button>
-                </div>
-            )) : <p className="text-gray-500">{t('panels.noEntries')}</p>}
-        </MemoizedHeaderPanel>
-
-        <MemoizedHeaderPanel title={t('panels.imageLibrary.title')} icon={ImageIcon} isOpen={activePanel === 'imageLibrary'} onClose={closeAllPanels} onClearAll={userData.clearImageLibrary}>
-            {imageLibrary.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {imageLibrary.map(img => (
-                        <div key={img.id} className="aspect-square bg-gray-700 rounded-md overflow-hidden cursor-pointer group relative" onClick={() => setLightboxImage(img)}>
-                            <img src={img.imageUrl} alt={img.prompt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <SearchIcon className="w-8 h-8 text-white" />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ) : <p className="text-gray-500">{t('panels.noEntries')}</p>}
-        </MemoizedHeaderPanel>
-        
-        <MemoizedHeaderPanel title={t('panels.snapshots.title')} icon={CameraIcon} isOpen={activePanel === 'snapshots'} onClose={closeAllPanels} onClearAll={userData.clearSnapshots}>
-            {userData.sessionSnapshots.length > 0 ? userData.sessionSnapshots.map(item => (
-                <div key={item.name} className="flex justify-between items-center bg-gray-800/50 p-2 rounded-md group">
-                    <button onClick={() => handleRestoreSnapshot(item)} className="text-left flex-grow">
-                       <p className="font-semibold text-gray-300 hover:text-accent truncate">{item.name}</p>
-                       <p className="text-xs text-gray-500">{new Date(item.timestamp).toLocaleString()}</p>
+      <MemoizedHeaderPanel title={t('panels.learningPaths.title')} icon={PathIcon} isOpen={activePanel === 'learningPaths'} onClose={closeAllPanels} onClearAll={userData.clearLearningPaths}>
+          <LearningPathsManager handleSearch={handleSearch} closePanel={closeAllPanels}/>
+      </MemoizedHeaderPanel>
+      
+      <MemoizedHeaderPanel title={t('panels.snapshots.title')} icon={CameraIcon} isOpen={activePanel === 'snapshots'} onClose={closeAllPanels} onClearAll={userData.clearSnapshots}>
+          {sessionSnapshots.length > 0 ? sessionSnapshots.map(item => (
+              <div key={item.name} className="flex justify-between items-center bg-gray-800/50 p-2 rounded-md group">
+                  <div className="flex-grow truncate">
+                    <button onClick={() => handleRestoreSnapshot(item)} className="text-left hover:text-accent">
+                        <p className="font-semibold truncate">{item.name}</p>
+                        <p className="text-xs text-gray-400 truncate">{item.topic}</p>
                     </button>
-                     <button onClick={() => userData.clearSnapshot(item.name)} title={t('panels.deleteEntry')} className="ml-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><TrashIcon className="w-4 h-4" /></button>
-                </div>
-            )) : <p className="text-gray-500">{t('panels.noEntries')}</p>}
-        </MemoizedHeaderPanel>
-        
-        <MemoizedHeaderPanel title={t('panels.learningPaths.title')} icon={PathIcon} isOpen={activePanel === 'learningPaths'} onClose={closeAllPanels} onClearAll={userData.clearLearningPaths}>
-            <LearningPathsManager handleSearch={handleSearch} closePanel={closeAllPanels} />
-        </MemoizedHeaderPanel>
+                  </div>
+                  <button onClick={() => userData.clearSnapshot(item.name)} className="p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100" title={t('panels.deleteEntry')}><TrashIcon className="w-4 h-4"/></button>
+              </div>
+          )) : <EmptyState icon={CameraIcon} text={t('panels.noEntries')} />}
+      </MemoizedHeaderPanel>
 
-        {/* More complex panels that don't fit the generic component */}
-        <SettingsModal isVisible={activePanel === 'settings'} onClose={closeAllPanels} />
-        <HelpGuide isVisible={activePanel === 'help'} onClose={closeAllPanels} />
-        <CommandPalette 
-            isOpen={isCommandPaletteOpen} 
-            onClose={() => setCommandPaletteOpen(false)}
-            onSearch={(topic) => handleSearch(topic)}
-            togglePanel={togglePanel}
-            onSerendipity={handleSerendipity}
-            article={article}
-            onGenerateAllImages={handleGenerateAllImages}
-            {...userData}
-        />
-        
-        {/* File input for import */}
-        <input type="file" ref={importFileRef} onChange={userData.handleImportData} accept=".json" className="hidden" />
-
-        {/* Lightbox Modal for Image Library */}
-        {lightboxImage && (
-            <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 animate-fade-in" onClick={() => setLightboxImage(null)}>
-                <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col relative" onClick={e => e.stopPropagation()}>
-                    <img src={lightboxImage.imageUrl} alt={lightboxImage.prompt} className="w-full h-auto object-contain flex-grow rounded-t-lg bg-gray-900" />
-                    <div className="p-4 bg-gray-900/50 rounded-b-lg border-t border-gray-700">
-                        <div className="flex justify-between items-start gap-4">
-                            <div>
-                                <p className="text-xs text-gray-400 font-semibold uppercase">{t('article.imagePrompt')}</p>
-                                <p className="text-sm text-gray-300 mt-1 font-mono">{lightboxImage.prompt}</p>
-                            </div>
-                            <button onClick={handleCopyLightboxPrompt} className="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white flex-shrink-0" aria-label={t('common.copy')}>
-                                <ClipboardCopyIcon className="w-5 h-5" isCopied={isLightboxCopied} />
-                            </button>
+      <MemoizedHeaderPanel title={t('panels.imageLibrary.title')} icon={ImageIcon} isOpen={activePanel === 'imageLibrary'} onClose={closeAllPanels} onClearAll={userData.clearImageLibrary}>
+          {imageLibrary.length > 0 ? (
+            <div className="grid grid-cols-2 gap-2">
+                {imageLibrary.map(img => (
+                    <button key={img.id} onClick={() => setLightboxImage(img)} className="aspect-square bg-gray-700 rounded-md overflow-hidden relative group">
+                        <img src={img.imageUrl} alt={img.prompt} className="w-full h-full object-cover"/>
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
+                           <p className="text-xs text-white text-center line-clamp-3">{img.prompt}</p>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">{t('panels.imageLibrary.sourceArticle')}: {lightboxImage.topic}</p>
-                    </div>
-                    <div className="absolute top-2 right-2 flex gap-2">
-                         <button 
-                            onClick={() => {
-                                if (window.confirm(t('panels.imageLibrary.confirmDelete'))) {
-                                    userData.clearImageLibraryItem(lightboxImage.id);
-                                    setLightboxImage(null);
-                                }
-                            }} 
-                            className="p-2 bg-red-800/80 text-white rounded-full hover:bg-red-700 transition-colors"
-                            title={t('panels.deleteEntry')}
-                            aria-label={t('panels.deleteEntry')}
-                        >
-                            <TrashIcon className="w-5 h-5"/>
-                        </button>
-                         <button onClick={() => setLightboxImage(null)} className="p-2 bg-gray-900/80 text-white rounded-full hover:bg-gray-700 transition-colors" aria-label={t('common.close')}>
-                            <CloseIcon className="w-5 h-5"/>
-                        </button>
+                    </button>
+                ))}
+            </div>
+          ) : <EmptyState icon={ImageIcon} text={t('panels.noEntries')} />}
+      </MemoizedHeaderPanel>
+
+
+      <div className={`min-h-screen pb-16 md:pb-0 ${activePanel ? 'md:pr-[28rem]' : ''} transition-all duration-300`}>
+        <header className="sticky top-0 z-20 bg-gray-900/80 backdrop-blur-md border-b border-gray-700/50">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-20">
+            <div className="flex items-center gap-4">
+               <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-accent flex-shrink-0"><circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="3"></circle><path d="M23 23C20.5 26.5 15 27.5 11 23C7 18.5 8.5 11.5 14 8.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round"></path></svg>
+               <h1 className="hidden sm:block text-2xl font-bold text-white tracking-wider">Codex</h1>
+            </div>
+            <div className="flex-grow max-w-2xl mx-2 sm:mx-8">
+              <SearchBar onSearch={handleSearch} onSerendipity={handleSerendipity} isLoading={isLoading} />
+            </div>
+            <div className="hidden md:flex items-center gap-1">
+                <button onClick={() => setCommandPaletteOpen(true)} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80" title={t('commandPalette.open')}><CommandIcon className="w-6 h-6"/></button>
+                <button onClick={() => togglePanel('history')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80" title={t('panels.history.title')}><HistoryIcon className="w-6 h-6"/></button>
+                <button onClick={() => togglePanel('bookmarks')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80" title={t('panels.bookmarks.title')}><BookmarkIcon className="w-6 h-6"/></button>
+                <button onClick={() => togglePanel('learningPaths')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80" title={t('panels.learningPaths.title')}><PathIcon className="w-6 h-6"/></button>
+                <button onClick={() => togglePanel('imageLibrary')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80" title={t('panels.imageLibrary.title')}><ImageIcon className="w-6 h-6"/></button>
+                <span className="w-px h-6 bg-gray-700 mx-2"></span>
+                <button onClick={() => togglePanel('snapshots')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80" title={t('panels.snapshots.title')}><CameraIcon className="w-6 h-6"/></button>
+                <button onClick={() => togglePanel('help')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80" title={t('panels.help.title')}><QuestionMarkCircleIcon className="w-6 h-6"/></button>
+                <button onClick={() => togglePanel('settings')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80" title={t('panels.settings.title')}><CogIcon className="w-6 h-6"/></button>
+            </div>
+            <MobileHeaderMenu togglePanel={togglePanel} setCommandPaletteOpen={setCommandPaletteOpen} />
+          </div>
+        </header>
+
+        <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
+            <div className="lg:col-span-2 mb-8 lg:mb-0">
+              <ArticleView
+                  article={article}
+                  isLoading={isLoading}
+                  error={error}
+                  onRetry={handleRetry}
+                  starterTopics={starterTopics}
+                  isLoadingTopics={isLoadingTopics}
+                  onTopicClick={handleSearch}
+                  onGenerateImage={handleGenerateImage}
+                  onGenerateAllImages={handleGenerateAllImages}
+                  onGenerateVideo={handleGenerateVideo}
+                  generatingImages={generatingImages}
+                  generatingVideoInfo={generatingVideoInfo}
+                  onEditImage={handleEditImage}
+                  editingImageIndex={editingImageIndex}
+                  fullArticleText={fullArticleText}
+                  isBookmarked={isBookmarked}
+              />
+              {relatedTopics.length > 0 && (
+                <SynapseGraph
+                    currentTopic={currentTopic}
+                    relatedTopics={relatedTopics}
+                    onTopicClick={handleSearch}
+                    onSerendipity={handleSerendipity}
+                    isLoading={isLoading}
+                />
+              )}
+            </div>
+            <div className="lg:col-span-1">
+              <AthenaCopilot
+                article={article}
+                fullArticleText={fullArticleText}
+                chat={chat}
+                messages={messages}
+                setMessages={setMessages}
+                isLoadingArticle={isLoading}
+                currentTopic={currentTopic}
+              />
+            </div>
+          </div>
+        </main>
+      </div>
+      <input
+        type="file"
+        ref={importFileRef}
+        onChange={userData.handleImportData}
+        className="hidden"
+        accept=".json"
+      />
+      <BottomNavBar activePanel={activePanel} togglePanel={togglePanel} />
+
+      {lightboxImage && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setLightboxImage(null)}>
+            <div className="relative max-w-4xl max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                <img src={lightboxImage.imageUrl} alt={lightboxImage.prompt} className="max-w-full max-h-[90vh] object-contain rounded-lg"/>
+                <div className="absolute -bottom-14 left-0 w-full text-center p-2 text-white">
+                    <p className="text-sm bg-black/50 p-2 rounded-md inline-block max-w-full truncate">{lightboxImage.prompt}</p>
+                    <div className="mt-2 flex items-center justify-center gap-4">
+                        <button onClick={lightboxCopy} className="flex items-center gap-1.5 text-sm text-sky-400 hover:text-sky-300 transition-transform active:scale-95">
+                             <ClipboardCopyIcon className="w-4 h-4" isCopied={isLightboxCopied} />
+                             {isLightboxCopied ? t('common.copied') : t('common.copyPrompt')}
+                         </button>
+                         <button onClick={() => userData.clearImageLibraryItem(lightboxImage.id)} className="flex items-center gap-1.5 text-sm text-red-400 hover:text-red-300 transition-transform active:scale-95">
+                             <TrashIcon className="w-4 h-4" /> {t('panels.deleteEntry')}
+                         </button>
                     </div>
                 </div>
+                <button onClick={() => setLightboxImage(null)} className="absolute top-2 right-2 p-2 bg-black/50 rounded-full text-white hover:bg-white/20">
+                    <CloseIcon className="w-6 h-6" />
+                </button>
             </div>
-        )}
-
-        <BottomNavBar activePanel={activePanel} togglePanel={togglePanel} />
-      </>
+        </div>
+      )}
     </UserDataContext.Provider>
   );
 }
 
-interface InitialDbData {
-    settings: AppSettings;
+interface InitialUserData {
     history: string[];
     bookmarks: string[];
     learningPaths: LearningPath[];
@@ -1110,52 +1081,59 @@ interface InitialDbData {
     imageLibrary: StoredImage[];
 }
 
-function App() {
-  const [initialDbData, setInitialDbData] = useState<InitialDbData | null>(null);
+const App = () => {
+    const [initialSettings, setInitialSettings] = useState<AppSettings | null>(null);
+    const [initialUserData, setInitialUserData] = useState<InitialUserData | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadData() {
-        try {
-            const [settings, history, bookmarks, learningPaths, sessionSnapshots, imageLibrary] = await Promise.all([
-                db.getSettings(defaultSettings),
-                db.getHistory(),
-                db.getBookmarks(),
-                db.getLearningPaths(),
-                db.getSessionSnapshots(),
-                db.getAllImages()
-            ]);
-            setInitialDbData({ settings, history, bookmarks, learningPaths, sessionSnapshots, imageLibrary });
-        } catch (error) {
-            console.error("Failed to load data from IndexedDB", error);
-            // Load with defaults if DB fails
-            setInitialDbData({
-                settings: defaultSettings,
-                history: [], bookmarks: [], learningPaths: [], sessionSnapshots: [], imageLibrary: []
-            });
-        }
+    useEffect(() => {
+        const loadInitialData = async () => {
+            try {
+                const settings = await db.getSettings(defaultSettings);
+                const history = await db.getHistory();
+                const bookmarks = await db.getBookmarks();
+                const learningPaths = await db.getLearningPaths();
+                const sessionSnapshots = await db.getSessionSnapshots();
+                const imageLibrary = await db.getAllImages();
+                
+                setInitialSettings(settings);
+                setInitialUserData({ history, bookmarks, learningPaths, sessionSnapshots, imageLibrary });
+            } catch (err) {
+                console.error("Failed to load data from IndexedDB", err);
+                setError("Could not load application data. Please ensure your browser supports IndexedDB and is not in private mode.");
+                setInitialSettings(defaultSettings); // Use defaults on error
+                setInitialUserData({ history: [], bookmarks: [], learningPaths: [], sessionSnapshots: [], imageLibrary: [] });
+            }
+        };
+        loadInitialData();
+    }, []);
+
+    if (!initialSettings || !initialUserData) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-gray-900 text-gray-200">
+                <LoadingSpinner text="Initializing Codex..." />
+            </div>
+        );
     }
-    loadData();
-  }, []);
 
-  if (!initialDbData) {
+    if (error) {
+        return (
+             <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-red-400 p-4 text-center">
+                <h1 className="text-2xl font-bold mb-4">Application Error</h1>
+                <p>{error}</p>
+            </div>
+        );
+    }
+
     return (
-        <div className="flex items-center justify-center h-screen bg-gray-900">
-            <LoadingSpinner text="Initializing Codex..." />
-        </div>
+        <SettingsProvider initialSettings={initialSettings}>
+            <LocalizationProvider>
+                <NotificationProvider>
+                    <CodexApp initialUserData={initialUserData} />
+                </NotificationProvider>
+            </LocalizationProvider>
+        </SettingsProvider>
     );
-  }
-
-  const { settings, ...initialUserData } = initialDbData;
-
-  return (
-    <SettingsProvider initialSettings={settings}>
-      <LocalizationProvider>
-        <NotificationProvider>
-            <CodexApp initialUserData={initialUserData} />
-        </NotificationProvider>
-      </LocalizationProvider>
-    </SettingsProvider>
-  );
-}
+};
 
 export default App;

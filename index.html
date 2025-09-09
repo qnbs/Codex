@@ -82,6 +82,30 @@
       .animate-fade-in-down {
         animation: fadeInDown 0.15s ease-out forwards;
       }
+      
+      /* Synapse Graph Animations */
+      @keyframes float {
+        0% { transform: translate(0, 0px); }
+        50% { transform: translate(0, 8px); }
+        100% { transform: translate(0, -0px); }
+      }
+      .animate-float {
+        animation: float 6s ease-in-out infinite;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { 
+            transform: scale(1); 
+            box-shadow: 0 0 0 0 hsla(var(--accent-color) / 0.4);
+        }
+        70% { 
+            transform: scale(1.05); 
+            box-shadow: 0 0 0 10px hsla(var(--accent-color) / 0); 
+        }
+      }
+      .hover\:animate-pulse:hover, .focus\:animate-pulse:focus {
+         animation: pulse 2s infinite;
+      }
     </style>
   <script type="importmap">
 {
