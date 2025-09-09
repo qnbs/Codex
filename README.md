@@ -1,3 +1,4 @@
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/qnbs/Codex)
 # Codex: Your AI-Powered Knowledge Partner
 
 [English](#english) | [Deutsch](#deutsch)
