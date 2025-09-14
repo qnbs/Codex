@@ -9,6 +9,10 @@
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='16' cy='16' r='14' stroke='%23f59e0b' stroke-width='3'/%3E%3Cpath d='M23 23C20.5 26.5 15 27.5 11 23C7 18.5 8.5 11.5 14 8.5' stroke='%23f59e0b' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" type="image/svg+xml">
 
+    <!-- PWA Manifest & iOS Support -->
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Codex%20-%20Knowledge%2C%20reimagined%22%2C%22short_name%22%3A%22Codex%22%2C%22description%22%3A%22Codex%20is%20an%20active%2C%20AI-powered%20knowledge%20partner%20that%20not%20only%20informs%20but%20also%20inspires%2C%20reveals%20connections%2C%20and%20turns%20learning%20into%20an%20immersive%20experience.%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23111827%22%2C%22theme_color%22%3A%22%23111827%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage/svg%2Bxml%2C%253Csvg%2520width%3D'32'%2520height%3D'32'%2520viewBox%3D'0%25200%252032%252032'%2520fill%3D'none'%2520xmlns%3D'http%3A//www.w3.org/2000/svg'%253E%253Ccircle%2520cx%3D'16'%2520cy%3D'16'%2520r%3D'14'%2520stroke%3D'%2523f59e0b'%2520stroke-width%3D'3'/%253E%253Cpath%2520d%3D'M23%252023C20.5%252026.5%252015%252027.5%252011%252023C7%252018.5%25208.5%252011.5%252014%25208.5'%2520stroke%3D'%2523f59e0b'%2520stroke-width%3D'3'%2520stroke-linecap%3D'round'/%253E%253C/svg%253E%22%2C%22type%22%3A%22image/svg%2Bxml%22%2C%22sizes%22%3A%22any%22%2C%22purpose%22%3A%22any%22%7D%5D%7D">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='16' cy='16' r='14' stroke='%23f59e0b' stroke-width='3'/%3E%3Cpath d='M23 23C20.5 26.5 15 27.5 11 23C7 18.5 8.5 11.5 14 8.5' stroke='%23f59e0b' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+
     <!-- Theme Color for Mobile Browsers -->
     <meta name="theme-color" content="#111827">
 
@@ -74,6 +78,28 @@
         background-color: #4b5563; /* gray-600 */
       }
       
+      /* Table of Contents Styles */
+      .toc {
+        position: sticky;
+        top: 6rem; /* Adjust based on header height */
+        max-height: calc(100vh - 8rem);
+        overflow-y: auto;
+        transition: all 0.3s ease-in-out;
+      }
+      .toc-link {
+        transition: all 0.2s ease-in-out;
+        border-left: 2px solid transparent;
+      }
+      .toc-link.active {
+        color: var(--accent-color);
+        transform: translateX(4px);
+        border-left-color: var(--accent-color);
+      }
+      .toc-link.active .toc-dot {
+        background-color: var(--accent-color);
+        transform: scale(1.5);
+      }
+
       /* Custom Animations */
       @keyframes fadeInDown {
         from { opacity: 0; transform: scale(0.95) translateY(-10px); }

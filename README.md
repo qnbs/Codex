@@ -1,4 +1,3 @@
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/qnbs/Codex)
 # Codex: Your AI-Powered Knowledge Partner
 
 [English](#english) | [Deutsch](#deutsch)
@@ -77,38 +76,6 @@ Codex is packed with features that redefine knowledge discovery:
 -   **Storage:** Browser **IndexedDB** for robust, persistent storage of all user data.
 
 ---
-
-### 🚀 Getting Started (Developers)
-
-To run Codex locally and contribute, you will need a Google Gemini API key.
-
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository-url>
-    cd codex-app
-    ```
-
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-
-3.  **Configure your API key:**
-    The application expects the API key in an environment variable. Create a `.env` file in the project's root directory and add your key:
-    ```
-    # .env
-    API_KEY="YOUR_GOOGLE_GEMINI_API_KEY"
-    ```
-    *Note: As this is a purely client-side application, the API key will be available in the browser. For production applications, implement appropriate security measures (e.g., a backend proxy).*
-
-4.  **Start the development server:**
-    ```bash
-    npm run dev
-    ```
-
-    Open `http://localhost:5173` (or the port shown in your terminal) in your browser.
-
----
 <a name="deutsch"></a>
 ## Deutsch
 
@@ -180,35 +147,3 @@ Codex ist vollgepackt mit Funktionen, die das Entdecken von Wissen neu definiere
   - **Bildbearbeitung:** `gemini-2.5-flash-image-preview`
   - **Videogenerierung:** `veo-2.0-generate-001`
 - **Speicher:** Browser **IndexedDB** für robuste, persistente Speicherung aller Benutzerdaten.
-
----
-
-### 🚀 Erste Schritte (Entwickler)
-
-Um Codex lokal auszuführen und weiterzuentwickeln, benötigen Sie einen Google Gemini API-Schlüssel.
-
-1.  **Klonen Sie das Repository:**
-    ```bash
-    git clone <repository-url>
-    cd codex-app
-    ```
-
-2.  **Installieren Sie die Abhängigkeiten:**
-    ```bash
-    npm install
-    ```
-
-3.  **Konfigurieren Sie Ihren API-Schlüssel:**
-    Die Anwendung erwartet den API-Schlüssel in einer Umgebungsvariable. Erstellen Sie eine `.env`-Datei im Stammverzeichnis des Projekts und fügen Sie Ihren Schlüssel hinzu:
-    ```
-    # .env
-    API_KEY="DEIN_GOOGLE_GEMINI_API_KEY"
-    ```
-    *Hinweis: Da dies eine rein clientseitige Anwendung ist, wird der API-Schlüssel im Browser verfügbar sein. Setzen Sie für Produktionsanwendungen entsprechende Sicherheitsmaßnahmen (z. B. einen Backend-Proxy) um.*
-
-4.  **Starten Sie den Entwicklungsserver:**
-    ```bash
-    npm run dev
-    ```
-
-    Öffnen Sie `http://localhost:5173` (oder den in Ihrem Terminal angezeigten Port) in Ihrem Browser.

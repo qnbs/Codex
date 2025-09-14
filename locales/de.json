@@ -1,4 +1,3 @@
-
 {
     "common": {
         "close": "Schließen",
@@ -127,7 +126,7 @@
         "welcomeMessage": "Hallo! Ich bin Athena, Ihre KI-Assistentin. Ich habe den Artikel über \"{{title}}\" gelesen. Wie kann ich Ihnen helfen, ihn besser zu verstehen?",
         "thinking": "Denke nach...",
         "error": "Es tut mir leid, ich habe im Moment Schwierigkeiten zu antworten. Bitte versuchen Sie es gleich noch einmal.",
-        "placeholder": "Eine Folgefrage stellen... (Strg+Enter)",
+        "placeholder": "Eine Folgefrage stellen...",
         "placeholderLoading": "Warte auf Artikel...",
         "loadingArticle": "Lese mich in '{{topic}}' ein...",
         "fallbackQuestions": [
@@ -433,8 +432,7 @@
         "videoGeneratedSuccess": "Video erfolgreich generiert!",
         "findingConnection": "Suche nach einer überraschenden Verbindung...",
         "cosmicLeapFound": "Kosmischer Sprung gefunden: {{topic}}",
-        "snapshotRestored": "Schnappschuss \"{{name}}\" wiederhergestellt.",
-        "exportArticleSuccess": "Artikel '{{title}}' erfolgreich exportiert."
+        "snapshotRestored": "Schnappschuss \"{{name}}\" wiederhergestellt."
     },
     "errors": {
         "unknown": "Ein unbekannter Fehler ist aufgetreten.",
@@ -443,7 +441,7 @@
         "imageEditFailed": "Bildbearbeitung fehlgeschlagen.",
         "imageGenSectionFailed": "Konnte kein Bild für \"{{section}}\" generieren.",
         "videoGenerationFailed": "Videogenerierung fehlgeschlagen.",
-        "noPromptForVideo": "Dieser Abschnitt hat einen Prompt für die Videogenerierung.",
+        "noPromptForVideo": "Dieser Abschnitt hat keinen Prompt für die Videogenerierung.",
         "cosmicLeapFailed": "Konnte kein Thema für einen kosmischen Sprung finden.",
         "fileRead": "Datei konnte nicht gelesen werden",
         "invalidBackup": "Ungültige Backup-Dateistruktur.",

@@ -168,7 +168,7 @@ export interface UserDataContextType {
     toggleBookmark: (topic: string) => void;
     handleAddToPath: (pathName: string, articleTitle: string) => void;
     handleCreatePath: (pathName: string) => void;
-    handleSaveSnapshot: () => void;
+    handleSaveSnapshot: (snapshot: SessionSnapshot) => void;
     handleExportData: () => void;
     handleImportData: (event: React.ChangeEvent<HTMLInputElement>) => void;
     handleTriggerImport: () => void;
@@ -189,4 +189,31 @@ export interface LocalizationContextType {
     locale: Locale;
     setLocale: (locale: Locale) => void;
     t: (key: string, params?: { [key: string]: string | number | undefined }) => any;
+    isLoading: boolean;
+}
+
+// Component Prop Types
+export type ActivePanel = 'history' | 'bookmarks' | 'learningPaths' | 'snapshots' | 'imageLibrary' | 'athena' | 'settings' | 'help' | 'commandPalette' | null;
+
+export interface MobilePanelProps {
+    activePanel: ActivePanel;
+    onClose: () => void;
+    handleSearch: (topic: string) => void;
+    handleLoadSnapshot: (snapshot: SessionSnapshot) => void;
+    athenaProps: {
+        article: ArticleData | null;
+        isLoading: boolean;
+        currentTopic: string | null;
+        history: string[];
+    };
+    initialChatHistory?: ChatMessage[];
+    athenaRef: React.RefObject<AthenaCopilotRef>;
+}
+
+export interface BottomNavBarProps {
+    togglePanel: (panel: ActivePanel) => void;
+}
+
+export interface AthenaCopilotRef {
+    getChatHistory: () => ChatMessage[];
 }

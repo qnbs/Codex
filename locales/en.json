@@ -1,4 +1,3 @@
-
 {
     "common": {
         "close": "Close",
@@ -127,7 +126,7 @@
         "welcomeMessage": "Hello! I'm Athena, your AI assistant. I've read the article on \"{{title}}\". How can I help you understand it better?",
         "thinking": "Thinking...",
         "error": "I'm sorry, I'm having trouble responding right now. Please try again in a moment.",
-        "placeholder": "Ask a follow-up question... (Ctrl+Enter)",
+        "placeholder": "Ask a follow-up question...",
         "placeholderLoading": "Waiting for article...",
         "loadingArticle": "Reading up on '{{topic}}'...",
         "fallbackQuestions": [
@@ -433,8 +432,7 @@
         "videoGeneratedSuccess": "Video generated successfully!",
         "findingConnection": "Finding a surprising connection...",
         "cosmicLeapFound": "Cosmic Leap found: {{topic}}",
-        "snapshotRestored": "Restored snapshot \"{{name}}\".",
-        "exportArticleSuccess": "Article '{{title}}' exported successfully."
+        "snapshotRestored": "Restored snapshot \"{{name}}\"."
     },
     "errors": {
         "unknown": "An unknown error occurred.",

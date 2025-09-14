@@ -1,9 +1,10 @@
-
 import React, { createContext, useContext, useCallback, ReactNode, useState, useEffect } from 'react';
 import { SettingsContext } from './AppContext';
 import { Language, Locale, LocalizationContextType } from '../types';
 
-// Hardcode English translations in a nested format to guarantee first load and match lookup logic.
+export const LocalizationContext = createContext<LocalizationContextType | null>(null);
+
+// EMBEDDED DEFAULT LANGUAGE - STRATEGIC FIX
 const enDefault = {
     "common": {
         "close": "Close",
@@ -27,15 +28,36 @@ const enDefault = {
         "title": "Welcome to Codex",
         "subtitle": "Your AI-powered knowledge partner. Start with a search or explore one of these fascinating topics."
     },
-    // FIX: Restructured starterTopics to be a categorized object to match the UI's expectation.
     "starterTopics": {
-        "Science & Nature": [
+        "Physics & Cosmos": [
             { "title": "The Physics of Black Holes", "description": "Journey to the edge of spacetime and explore these cosmic mysteries." },
-            { "title": "Mycology and Fungal Networks", "description": "Uncover the secrets of the 'Wood Wide Web' that connects forests." }
+            { "title": "Quantum Entanglement", "description": "Explore the 'spooky action at a distance' that baffled even Einstein." },
+            { "title": "The Nature of Dark Matter", "description": "What is the invisible substance that makes up most of the universe's mass?" },
+            { "title": "Supernovae and Neutron Stars", "description": "The explosive deaths of stars and the ultra-dense objects they leave behind." }
         ],
-        "History & Arts": [
-            { "title": "The Great Emu War", "description": "Discover the bizarre true story of Australia's military operation against birds." },
-            { "title": "History of Impressionism", "description": "How a revolutionary art movement changed the way we see the world." }
+        "Biology & Earth": [
+            { "title": "CRISPR Gene Editing", "description": "A revolutionary technology that allows scientists to rewrite the code of life." },
+            { "title": "Mycology and Fungal Networks", "description": "Uncover the secrets of the 'Wood Wide Web' that connects entire forests." },
+            { "title": "Bioluminescence", "description": "How and why living organisms produce their own light in the dark depths of the ocean." },
+            { "title": "The Cambrian Explosion", "description": "The mysterious event 541 million years ago when most major animal phyla appeared." }
+        ],
+        "History & Culture": [
+            { "title": "The Library of Alexandria", "description": "The story of the ancient world's greatest hub of knowledge and its tragic destruction." },
+            { "title": "History of Impressionism", "description": "How a revolutionary art movement changed the way we see the world." },
+            { "title": "Viking Navigation Techniques", "description": "How Vikings navigated the open seas using sunstones and sky-compasses." },
+            { "title": "The Rosetta Stone", "description": "The discovery that unlocked the secrets of ancient Egyptian hieroglyphs." }
+        ],
+        "Technology & Future": [
+            { "title": "How Neural Networks Work", "description": "A look inside the brain-inspired algorithms that power modern AI." },
+            { "title": "The Future of Fusion Energy", "description": "Can we replicate the power of the sun on Earth for clean, limitless energy?" },
+            { "title": "The History of the Internet", "description": "From a military project to a global network connecting billions." },
+            { "title": "The Ethics of Artificial Intelligence", "description": "Exploring the complex moral questions raised by increasingly intelligent machines." }
+        ],
+        "Curiosities & Bizarre": [
+            { "title": "The Great Emu War", "description": "The bizarre true story of Australia's military operation against birds." },
+            { "title": "The Dancing Plague of 1518", "description": "The mysterious historical event where hundreds of people danced uncontrollably for days." },
+            { "title": "The Voynich Manuscript", "description": "A centuries-old, illustrated codex written in an unknown and undeciphered script." },
+            { "title": "Ball Lightning", "description": "Investigating the rare and unexplained atmospheric phenomenon of luminous spheres." }
         ]
     },
     "article": {
@@ -81,6 +103,15 @@ const enDefault = {
             "status": {
                 "start": "Starting video generation..."
             }
+        },
+        "export": {
+            "title": "Export Article",
+            "formats": {
+                "txt": "as Text (.txt)",
+                "md": "as Markdown (.md)",
+                "html": "as HTML (.html)",
+                "json": "as JSON (.json)"
+            }
         }
     },
     "summary": {
@@ -102,7 +133,7 @@ const enDefault = {
         "welcomeMessage": "Hello! I'm Athena, your AI assistant. I've read the article on \"{{title}}\". How can I help you understand it better?",
         "thinking": "Thinking...",
         "error": "I'm sorry, I'm having trouble responding right now. Please try again in a moment.",
-        "placeholder": "Ask a follow-up question... (Ctrl+Enter)",
+        "placeholder": "Ask a follow-up question...",
         "placeholderLoading": "Waiting for article...",
         "loadingArticle": "Reading up on '{{topic}}'...",
         "fallbackQuestions": [
@@ -139,6 +170,8 @@ const enDefault = {
             "goToArticle": "Go to Article",
             "removeFromPath": "Remove from Path",
             "deletePath": "Delete Path",
+            "moveUp": "Move up",
+            "moveDown": "Move down",
             "noArticles": "No articles in this path yet.",
             "noPathsTitle": "No Learning Paths Created",
             "noPathsDescription": "You can create a new path by adding an article to it from the article view."
@@ -156,7 +189,8 @@ const enDefault = {
             "title": "Settings"
         },
         "help": {
-            "title": "Help"
+            "title": "Help",
+            "aboutApp": "About the App"
         },
         "noEntries": "No entries.",
         "deleteEntry": "Delete entry",
@@ -261,8 +295,8 @@ const enDefault = {
         "title": "Codex Help & Guide",
         "close": "Close help window",
         "tab": {
-            "tutorial": "Step-by-step Guide",
-            "glossary": "Knowledge Base & Glossary",
+            "tutorial": "Guide",
+            "glossary": "Glossary",
             "about": "About"
         },
         "tutorialContent": {
@@ -337,6 +371,24 @@ const enDefault = {
                     ]
                 }
             ]
+        },
+        "aboutContent": {
+            "intro": "Codex is not just an information tool; it's an active, AI-powered knowledge partner that not only informs but also inspires, reveals connections, and turns learning into an immersive experience.",
+            "pillars": {
+                "title": "Three Core Pillars",
+                "personalization": "**Personalization:** Customize Codex to your preferences. Change the accent color, font, text size, and AI behavior.",
+                "visualization": "**Visualization:** Each article section can be brought to life with unique, AI-generated images and videos.",
+                "interconnection": "**Interconnection:** The Synapse Graph and 'Cosmic Leap' help you discover unexpected connections between topics."
+            },
+            "tech": {
+                "title": "Technology",
+                "p1": "Codex is powered by React, TypeScript, and the Google Gemini API for state-of-the-art AI capabilities. All your data is stored securely in your browser's IndexedDB."
+            },
+            "links": {
+                "title": "Links",
+                "aiStudio": "Live Demo on Google AI Studio",
+                "github": "View the Code on GitHub"
+            }
         }
     },
     "entry": {
@@ -408,80 +460,58 @@ const enDefault = {
     }
 };
 
-export const LocalizationContext = createContext<LocalizationContextType | null>(null);
-
-const getTranslation = (language: any, key: string): any => {
-    if (!key) return undefined;
-    // Traverses the object based on a dot-separated key path.
-    return key.split('.').reduce((obj, keyPart) => {
-        return obj && typeof obj === 'object' ? obj[keyPart] : undefined;
-    }, language);
-};
-
-
-export const LocalizationProvider = ({ children }: { children: ReactNode }) => {
+export const LocalizationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { settings, setSettings } = useContext(SettingsContext)!;
-    const locale = settings.language;
-    
-    const [translations, setTranslations] = useState<Record<string, any>>({ en: enDefault });
+    const [translations, setTranslations] = useState<any>({ en: enDefault });
+    const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-        if (locale === 'de' && !translations.de) {
-            fetch('/locales/de.json')
-                .then(res => res.json())
-                .then(data => {
-                    setTranslations(prev => ({ ...prev, de: data }));
-                })
-                .catch(err => console.error("Failed to load German translations", err));
-        }
-    }, [locale, translations.de]);
-    
+    const locale = settings.language;
     const setLocale = (newLocale: Locale) => {
-        setSettings(prev => ({ ...prev, language: newLocale as Language }));
+        setSettings(s => ({ ...s, language: newLocale as Language }));
     };
 
-    const t = useCallback((key: string, params?: { [key: string]: string | number | undefined }) => {
-        const lang = translations[locale] ?? translations.en;
-        const fallbackLang = translations['en'];
-        
-        let text = getTranslation(lang, key);
-        
-        // Fallback to English if translation is missing in the current language
-        if (text === undefined) {
-            text = getTranslation(fallbackLang, key);
+    useEffect(() => {
+        if (locale !== 'en' && !translations[locale]) {
+            setIsLoading(true);
+            fetch(`./locales/${locale}.json`)
+                .then(res => {
+                    if (!res.ok) throw new Error(`Failed to load locale file: ${locale}.json`);
+                    return res.json();
+                })
+                .then(data => {
+                    setTranslations(t => ({ ...t, [locale]: data }));
+                })
+                .catch(console.error)
+                .finally(() => setIsLoading(false));
         }
-        
-        // Fallback to the key itself if still not found
-        if (text === undefined) {
-            console.warn(`Translation key not found: ${key}`);
-            return key;
-        }
-
-        // If it's not a string, it might be an array (e.g., starter topics) or a complex object for the help guide.
-        if (typeof text !== 'string') {
-            return text;
-        }
-
-        if (params) {
-            Object.keys(params).forEach(pKey => {
-                const value = params[pKey];
-                if (value !== undefined) {
-                   text = (text as string).replace(new RegExp(`{{${pKey}}}`, 'g'), String(value));
-                }
-            });
-        }
-        
-        return text;
     }, [locale, translations]);
 
+    const t = useCallback((key: string, params?: { [key: string]: string | number | undefined }) => {
+        const lang = translations[locale] || translations.en;
+        const keys = key.split('.');
+        let result = lang;
+
+        for (const k of keys) {
+            result = result?.[k];
+        }
+
+        if (typeof result === 'string' && params) {
+            return Object.entries(params).reduce((str, [key, val]) => {
+                return str.replace(new RegExp(`{{${key}}}`, 'g'), String(val));
+            }, result);
+        }
+        
+        return result || key;
+    }, [locale, translations]);
+    
     return (
-        <LocalizationContext.Provider value={{ locale, setLocale, t }}>
+        <LocalizationContext.Provider value={{ locale, setLocale, t, isLoading }}>
             {children}
         </LocalizationContext.Provider>
     );
 };
 
-export const useLocalization = (): LocalizationContextType => {
+export const useLocalization = () => {
     const context = useContext(LocalizationContext);
     if (!context) {
         throw new Error('useLocalization must be used within a LocalizationProvider');

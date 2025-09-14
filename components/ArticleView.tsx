@@ -1,730 +1,554 @@
-import React, { useState, useRef, useEffect, useMemo, useContext, useCallback } from 'react';
-import { ArticleData, StarterTopic, AppSettings, TextSize, SummaryType, TimelineEvent } from '../types';
-import { BookOpenIcon, SparklesIcon, TextSelectIcon, WandIcon, ImageIcon, CloseIcon, ClockIcon, ReloadIcon, ClipboardCopyIcon, TimelineIcon, SummarizeIcon, KeyPointsIcon, Eli5Icon, AnalogyIcon, PathIcon, PlusIcon, BookmarkIcon, VideoCameraIcon, DownloadIcon, ExclamationTriangleIcon } from './IconComponents';
-import LoadingSpinner from './LoadingSpinner';
-import { explainOrDefine, generateSummary, constructImagePrompt } from '../services/geminiService';
-import { SettingsContext, UserDataContext, NotificationContext } from '../context/AppContext';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ArticleData, ArticleSection, SummaryType, AppSettings, TimelineEvent } from '../types';
 import { useLocalization } from '../context/LocalizationContext';
+import * as geminiService from '../services/geminiService';
+import LoadingSpinner from './LoadingSpinner';
+import {
+    BookmarkIcon, ImageIcon, WandIcon, ClipboardCopyIcon, TextSelectIcon, SummarizeIcon,
+    Eli5Icon, KeyPointsIcon, AnalogyIcon, TimelineIcon, PlusIcon, VideoCameraIcon,
+    CloseIcon
+} from './IconComponents';
 
-const WelcomeScreen = React.memo(({ starterTopics, onTopicClick, isLoadingTopics }: { starterTopics: { [key: string]: StarterTopic[] }, onTopicClick: (topic: string) => void, isLoadingTopics: boolean }) => {
+type ArticleViewProps = {
+    article: ArticleData;
+    isLoading: boolean;
+    currentTopic: string;
+    isBookmarked: boolean;
+    settings: AppSettings;
+    onToggleBookmark: () => void;
+    onAddToPath: (pathName: string) => void;
+    onCreatePath: (pathName: string) => void;
+    learningPaths: { name: string }[];
+    onGenerateImage: (sectionIndex: number) => Promise<void>;
+    onGenerateAllImages: () => void;
+    onGenerateVideo: (sectionIndex: number, onStatusUpdate: (status: string) => void) => Promise<void>;
+    addNotification: (message: string, type?: 'success' | 'error' | 'info') => void;
+    addImageToLibrary: (imageData: { imageUrl: string; prompt: string; topic: string; }) => void;
+    onSearch: (topic: string) => void;
+};
+
+// Sub-component for the text interaction toolbar
+const InteractionToolbar: React.FC<{
+    position: { top: number; left: number };
+    onAction: (action: 'Define' | 'Explain' | 'Visualize') => void;
+}> = ({ position, onAction }) => {
     const { t } = useLocalization();
     return (
-        <div className="text-center p-8 flex flex-col items-center justify-center h-full">
-            <SparklesIcon className="w-16 h-16 text-accent mb-6"/>
-            <h1 className="text-4xl font-bold text-white mb-2">{t('welcome.title')}</h1>
-            <p className="text-lg text-gray-400 max-w-2xl mb-12">{t('welcome.subtitle')}</p>
-            <div className="w-full max-w-5xl space-y-8">
-                {isLoadingTopics ? (
-                    Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="bg-gray-800/50 rounded-lg p-4 h-32 animate-pulse"></div>
-                    ))
-                ) : (
-                    Object.entries(starterTopics).map(([category, topics]) => (
-                        <div key={category}>
-                            <h2 className="text-2xl font-bold text-accent mb-4 text-left">{category}</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {topics.map(topic => (
-                                     <button key={topic.title} onClick={() => onTopicClick(topic.title)} className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 text-left hover:bg-gray-700/50 hover:border-accent/50 transition-all duration-300 active:scale-[0.98]">
-                                        <h3 className="font-bold text-accent">{topic.title}</h3>
-                                        <p className="text-sm text-gray-400 mt-1">{topic.description}</p>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
-        </div>
-    );
-});
-
-interface MediaDisplayProps {
-    imageUrl?: string;
-    videoUrl?: string;
-    prompt?: string;
-    onGenerateImage: () => void;
-    onGenerateVideo: () => void;
-    isGeneratingImage: boolean;
-    generatingVideoInfo: { index: number | null, status: string | null };
-    onEdit: (prompt: string) => void;
-    isEditing: boolean;
-}
-
-const MediaDisplay = ({ imageUrl, videoUrl, prompt, onGenerateImage, onGenerateVideo, isGeneratingImage, generatingVideoInfo, onEdit, isEditing }: MediaDisplayProps) => {
-    const { settings } = useContext(SettingsContext)!;
-    const { locale, t } = useLocalization();
-    const [isCopied, setIsCopied] = useState(false);
-    const [showEditUI, setShowEditUI] = useState(false);
-    const [editPrompt, setEditPrompt] = useState('');
-    const [videoStatusMessage, setVideoStatusMessage] = useState('');
-    const isGeneratingVideo = generatingVideoInfo.index !== null;
-
-    const videoLoadingMessages: string[] = t('article.video.loadingMessages');
-
-    useEffect(() => {
-        let intervalId: number | undefined;
-
-        if (isGeneratingVideo) {
-            // If a specific status comes from the hook, display it.
-            if (generatingVideoInfo.status) {
-                setVideoStatusMessage(generatingVideoInfo.status);
-            } else {
-                // Otherwise, start cycling through generic messages.
-                setVideoStatusMessage(videoLoadingMessages[0]);
-                let messageIndex = 0;
-                intervalId = window.setInterval(() => {
-                    messageIndex = (messageIndex + 1) % videoLoadingMessages.length;
-                    setVideoStatusMessage(videoLoadingMessages[messageIndex]);
-                }, 4000);
-            }
-        }
-
-        return () => {
-            if (intervalId) {
-                clearInterval(intervalId);
-            }
-        };
-    }, [isGeneratingVideo, generatingVideoInfo.status, videoLoadingMessages]);
-
-
-    if (!prompt) return null;
-
-    const fullPrompt = constructImagePrompt(prompt, settings, locale);
-    const styleModifiers = fullPrompt.replace(`${prompt}, `, '');
-
-    const handleCopy = () => {
-        navigator.clipboard.writeText(fullPrompt);
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
-    };
-    
-    const handleEditSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (editPrompt.trim()) {
-            onEdit(editPrompt.trim());
-            setShowEditUI(false);
-            setEditPrompt('');
-        }
-    };
-    
-    const renderContent = () => {
-        if (videoUrl) {
-            return <video src={videoUrl} controls className="w-full h-full object-cover" />;
-        }
-        if (imageUrl) {
-            return (
-                <>
-                    <img src={imageUrl} alt={prompt} className="w-full h-full object-cover" />
-                    {!isEditing && !showEditUI && (
-                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                            <button 
-                                onClick={() => setShowEditUI(true)}
-                                className="p-2 bg-gray-900/60 backdrop-blur-sm rounded-full text-white hover:bg-accent hover:text-accent-contrast transition-all"
-                                title={t('article.editImage.title')}
-                                aria-label={t('article.editImage.title')}
-                            >
-                                <WandIcon className="w-5 h-5" />
-                            </button>
-                        </div>
-                    )}
-                    {showEditUI && (
-                         <div className="absolute inset-0 bg-black/70 z-20 flex flex-col items-center justify-center p-4 animate-fade-in-down">
-                            <form onSubmit={handleEditSubmit} className="w-full max-w-md">
-                                <label className="text-white font-semibold mb-2 block text-center">{t('article.editImage.promptLabel')}</label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={editPrompt}
-                                        onChange={e => setEditPrompt(e.target.value)}
-                                        placeholder={t('article.editImage.placeholder')}
-                                        className="w-full bg-gray-800 border-2 border-gray-600 rounded-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent py-2 px-4"
-                                        autoFocus
-                                    />
-                                    <button type="submit" className="px-4 py-2 bg-accent text-accent-contrast font-semibold rounded-full hover:bg-accent-hover">
-                                        {t('article.generate')}
-                                    </button>
-                                </div>
-                                <button type="button" onClick={() => setShowEditUI(false)} className="mt-3 text-gray-400 text-sm hover:text-white">{t('common.close')}</button>
-                            </form>
-                        </div>
-                    )}
-                </>
-            );
-        }
-        if (isGeneratingVideo) {
-            return <LoadingSpinner text={videoStatusMessage} />;
-        }
-        if (isGeneratingImage) {
-            return <LoadingSpinner text={t('article.generatingImage')} />;
-        }
-        return (
-             <div className="w-full h-full bg-gray-700/50 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center p-4">
-                <div className="w-full text-left">
-                     <div className="flex justify-between items-center">
-                         <p className="text-xs text-gray-400 font-semibold uppercase">{t('article.imagePrompt')}</p>
-                         <button onClick={handleCopy} className="flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 transition-transform active:scale-95">
-                             <ClipboardCopyIcon className="w-3.5 h-3.5" isCopied={isCopied} />
-                             {isCopied ? t('common.copied') : t('common.copyPrompt')}
-                         </button>
-                     </div>
-                     <p className="text-sm text-gray-300 mt-2 font-mono bg-gray-900/50 p-2 rounded-md">
-                        <span className="text-gray-400">{prompt}, </span><span className="text-amber-300/80">{styleModifiers}</span>
-                     </p>
-                </div>
-                 <div className="flex items-center gap-4 mt-4">
-                    <button onClick={onGenerateImage} className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-contrast text-sm font-semibold rounded-full hover:bg-accent-hover transition-all transform active:scale-95 disabled:bg-gray-600">
-                        <ImageIcon className="w-5 h-5" />
-                        {t('article.generateImage')}
-                    </button>
-                    <button onClick={onGenerateVideo} className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white text-sm font-semibold rounded-full hover:bg-rose-500 transition-all transform active:scale-95 disabled:bg-gray-600">
-                        <VideoCameraIcon className="w-5 h-5" />
-                        {t('article.generateVideo')}
-                    </button>
-                </div>
-            </div>
-        );
-    };
-
-    return (
-        <div className="relative w-full aspect-video bg-gray-800 rounded-lg my-6 flex items-center justify-center overflow-hidden group">
-             {isEditing && (
-                <div className="absolute inset-0 bg-gray-900/80 z-20 flex items-center justify-center">
-                    <LoadingSpinner text={t('article.editingImage')} />
-                </div>
-            )}
-            {renderContent()}
+        <div
+            className="absolute z-30 bg-gray-800 border border-gray-700 rounded-lg shadow-lg flex items-center p-1"
+            style={{ top: position.top, left: position.left, transform: 'translateY(-100%)' }}
+        >
+            <button onClick={() => onAction('Define')} className="px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-md">{t('interaction.define')}</button>
+            <div className="w-px h-4 bg-gray-600 mx-1"></div>
+            <button onClick={() => onAction('Explain')} className="px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-md">{t('interaction.explain')}</button>
+            <div className="w-px h-4 bg-gray-600 mx-1"></div>
+            <button onClick={() => onAction('Visualize')} className="px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-md">{t('interaction.visualize')}</button>
         </div>
     );
 };
 
-const TimelineDisplay = React.memo(({ timeline, onEventClick }: { timeline?: TimelineEvent[], onEventClick: (topic: string) => void }) => {
-    const { t } = useLocalization();
-    if (!timeline || timeline.length === 0) return null;
+// Sub-component for displaying interaction results
+const InteractionModal: React.FC<{
+    mode: 'Define' | 'Explain' | 'Visualize' | null;
+    text: string;
+    onClose: () => void;
+    settings: AppSettings;
+}> = ({ mode, text, onClose, settings }) => {
+    const [result, setResult] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(false);
+    const { t, locale } = useLocalization();
+
+    useEffect(() => {
+        if (!mode || !text) return;
+        setIsLoading(true);
+        setResult('');
+
+        geminiService.explainOrDefine(text, mode, settings, locale)
+            .then(setResult)
+            .catch(err => setResult(err.message))
+            .finally(() => setIsLoading(false));
+
+    }, [mode, text, settings, locale]);
+
+    if (!mode) return null;
+
+    const titles = {
+        Define: t('interaction.modal.defineTitle', { text }),
+        Explain: t('interaction.modal.explainTitle', { text }),
+        Visualize: t('interaction.modal.visualizeTitle', { text }),
+    };
+    const loadingText = mode === 'Visualize' ? t('interaction.modal.visualizing') : t('interaction.modal.thinking');
 
     return (
-        <div className="my-8 p-6 bg-gray-800/50 rounded-lg">
-            <h3 className="text-2xl font-bold mb-6 flex items-center gap-3"><TimelineIcon className="w-7 h-7 text-accent" /> {t('article.keyMoments')}</h3>
-            <div className="relative border-l-2 border-accent/30 pl-6 space-y-8">
-                {timeline.map((event, index) => (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center p-4 border-b border-gray-700">
+                    <h3 className="text-lg font-semibold text-white truncate">{titles[mode]}</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white"><CloseIcon className="w-6 h-6" /></button>
+                </div>
+                <div className="p-6 overflow-y-auto">
+                    {isLoading && <LoadingSpinner text={loadingText} />}
+                    {result && (
+                        mode === 'Visualize'
+                            ? <img src={result} alt={text} className="rounded-lg w-full object-contain" />
+                            : <p className="text-gray-300 whitespace-pre-wrap">{result}</p>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Edit Image Modal
+const EditImageModal: React.FC<{
+    imageUrl: string;
+    onClose: () => void;
+    onEditComplete: (newImageUrl: string, prompt: string) => void;
+}> = ({ imageUrl, onClose, onEditComplete }) => {
+    const [prompt, setPrompt] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
+    const { t, locale } = useLocalization();
+
+    const handleEdit = async () => {
+        if (!prompt.trim()) return;
+        setIsEditing(true);
+        try {
+            const newImageUrl = await geminiService.editImage(imageUrl, prompt, locale);
+            onEditComplete(newImageUrl, prompt);
+            onClose();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsEditing(false);
+        }
+    };
+    
+    return (
+         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl w-full max-w-3xl flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center p-4 border-b border-gray-700">
+                    <h3 className="text-lg font-semibold text-white">{t('article.editImage.title')}</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white"><CloseIcon className="w-6 h-6" /></button>
+                </div>
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <img src={imageUrl} alt="Original" className="rounded-lg object-contain w-full max-h-80" />
+                    <div className="flex flex-col">
+                        <label htmlFor="edit-prompt" className="text-sm font-medium text-gray-300 mb-2">{t('article.editImage.promptLabel')}</label>
+                        <textarea
+                            id="edit-prompt"
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
+                            placeholder={t('article.editImage.placeholder')}
+                            rows={4}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-md text-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-accent"
+                        />
+                        <button
+                            onClick={handleEdit}
+                            disabled={isEditing || !prompt.trim()}
+                            className="mt-4 w-full bg-accent text-accent-contrast font-bold py-2 px-4 rounded-lg hover:bg-accent-hover disabled:bg-gray-600 transition-colors flex items-center justify-center"
+                        >
+                            {isEditing ? <LoadingSpinner text={t('article.editingImage')} /> : t('common.generate')}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+// Summary Widget
+const SummaryWidget: React.FC<{ article: ArticleData, addNotification: ArticleViewProps['addNotification'] }> = ({ article, addNotification }) => {
+    const [summary, setSummary] = useState<{ type: SummaryType; content: string } | null>(null);
+    const [loadingSummary, setLoadingSummary] = useState<SummaryType | null>(null);
+    const { t, locale } = useLocalization();
+
+    const getSummary = async (type: SummaryType) => {
+        setLoadingSummary(type);
+        setSummary(null);
+        try {
+            const articleText = `${article.introduction}\n\n${article.sections.map(s => `## ${s.heading}\n${s.content}`).join('\n\n')}`;
+            const result = await geminiService.generateSummary(articleText, type, locale);
+            setSummary({ type, content: result });
+        } catch (error: any) {
+            addNotification(error.message, 'error');
+        } finally {
+            setLoadingSummary(null);
+        }
+    };
+
+    const buttons = [
+        { type: SummaryType.TLDR, icon: SummarizeIcon, label: t('summary.tldr') },
+        { type: SummaryType.ELI5, icon: Eli5Icon, label: t('summary.eli5') },
+        { type: SummaryType.KEY_POINTS, icon: KeyPointsIcon, label: t('summary.keyPoints') },
+        { type: SummaryType.ANALOGY, icon: AnalogyIcon, label: t('summary.analogy') },
+    ];
+
+    return (
+        <div className="my-6 p-4 bg-gray-800/50 rounded-lg">
+            <div className="flex flex-wrap justify-center gap-2">
+                {buttons.map(({ type, icon: Icon, label }) => (
+                    <button
+                        key={type}
+                        onClick={() => getSummary(type)}
+                        disabled={!!loadingSummary}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/60 text-gray-300 rounded-full hover:bg-gray-700 hover:text-white transition-colors text-sm disabled:opacity-50"
+                    >
+                        <Icon className="w-4 h-4" />
+                        <span>{label}</span>
+                    </button>
+                ))}
+            </div>
+            {loadingSummary && <div className="mt-4"><LoadingSpinner text={t('summary.generating', { type: loadingSummary })} /></div>}
+            {summary && (
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                    <h3 className="font-bold text-accent mb-2">{t(`summary.${summary.type}`)}</h3>
+                    <div className="prose prose-invert prose-sm max-w-none text-gray-300 whitespace-pre-wrap">{summary.content}</div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Timeline Widget
+const Timeline: React.FC<{ events: TimelineEvent[], onSearch: (topic: string) => void }> = ({ events, onSearch }) => {
+    const { t } = useLocalization();
+    return (
+        <div className="my-8">
+            <h2 id="timeline" className="flex items-center gap-3 text-2xl font-bold text-gray-100 mb-6">
+                <TimelineIcon className="w-7 h-7 text-accent" />
+                <span>{t('article.keyMoments')}</span>
+            </h2>
+            <div className="relative border-l-2 border-accent/30 ml-4 pl-8 space-y-8">
+                {events.map((event, index) => (
                     <div key={index} className="relative">
-                        <div className="absolute -left-[35px] top-1.5 w-4 h-4 bg-gray-800 border-2 border-accent rounded-full"></div>
-                        <p className="text-accent font-semibold">{event.date}</p>
-                        <h4 className="font-bold text-lg mt-1 text-gray-200">{event.title}</h4>
+                        <div className="absolute -left-10 top-1.5 w-4 h-4 bg-gray-700 border-2 border-accent rounded-full"></div>
+                        <p className="text-sm text-accent font-semibold">{event.date}</p>
+                        <h4 className="font-bold text-lg text-gray-200 mt-1">{event.title}</h4>
                         <p className="text-gray-400 mt-1">{event.description}</p>
-                        <button onClick={() => onEventClick(event.title)} className="text-sm text-accent hover:underline mt-1">{t('article.learnMore')}</button>
+                         <button onClick={() => onSearch(event.title)} className="text-xs text-accent/80 hover:text-accent hover:underline mt-1">{t('article.learnMore')}</button>
                     </div>
                 ))}
             </div>
         </div>
     );
-});
-
-const SummaryDisplay = ({ fullArticleText }: { fullArticleText: string }) => {
-    const { t, locale } = useLocalization();
-    const [summaryType, setSummaryType] = useState<SummaryType | null>(null);
-    const [summary, setSummary] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleGenerateSummary = useCallback(async (type: SummaryType) => {
-        setIsLoading(true);
-        setSummaryType(type);
-        try {
-            const result = await generateSummary(fullArticleText, type, locale);
-            setSummary(result);
-        } catch (error) {
-            setSummary(error instanceof Error ? error.message : "Summary could not be generated.");
-        } finally {
-            setIsLoading(false);
-        }
-    }, [fullArticleText, locale]);
-
-    const summaryButtons = [
-        { type: SummaryType.TLDR, label: t('summary.tldr'), icon: SummarizeIcon },
-        { type: SummaryType.ELI5, label: t('summary.eli5'), icon: Eli5Icon },
-        { type: SummaryType.KEY_POINTS, label: t('summary.keyPoints'), icon: KeyPointsIcon },
-        { type: SummaryType.ANALOGY, label: t('summary.analogy'), icon: AnalogyIcon },
-    ];
-    
-    return (
-        <div className="my-6">
-             <div className="flex flex-wrap gap-2">
-                {summaryButtons.map(({ type, label, icon: Icon }) => (
-                     <button 
-                        key={type}
-                        onClick={() => handleGenerateSummary(type)}
-                        disabled={isLoading}
-                        className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-full transition-all transform active:scale-95 ${summaryType === type ? 'bg-accent text-accent-contrast' : 'bg-gray-700/80 hover:bg-gray-600/80 text-gray-300'}`}
-                    >
-                        <Icon className="w-4 h-4"/>
-                        {label}
-                    </button>
-                ))}
-             </div>
-             {summaryType && (
-                <div className="mt-4 p-4 bg-gray-800/50 rounded-lg">
-                    {isLoading ? (
-                        <LoadingSpinner text={t('summary.generating', { type: summaryType.toString() })} />
-                    ) : (
-                         <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap">{summary}</div>
-                    )}
-                </div>
-             )}
-        </div>
-    );
 }
 
-const AddToPathDropdown = ({ articleTitle }: { articleTitle: string }) => {
-    const { learningPaths, handleCreatePath, handleAddToPath } = useContext(UserDataContext)!;
+// Add to Path Dropdown
+const AddToPathDropdown: React.FC<{
+    learningPaths: { name: string }[];
+    onAddToPath: (pathName: string) => void;
+    onCreatePath: (pathName: string) => void;
+}> = ({ learningPaths, onAddToPath, onCreatePath }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [newPathName, setNewPathName] = useState('');
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const { t } = useLocalization();
-    const [isCreating, setIsCreating] = useState(false);
-    const [newPathName, setNewPathName] = useState("");
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const handleCreate = () => {
         if (newPathName.trim()) {
-            handleCreatePath(newPathName.trim());
-            handleAddToPath(newPathName.trim(), articleTitle);
-            setNewPathName("");
-            setIsCreating(false);
+            onCreatePath(newPathName.trim());
+            onAddToPath(newPathName.trim());
+            setNewPathName('');
+            setIsOpen(false);
         }
     };
-    
+
     return (
-        <div className="relative group">
-            <button className="flex items-center gap-1.5 p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors" title={t('article.addToPath.title')} aria-label={t('article.addToPath.title')}>
-                <PathIcon className="w-6 h-6" />
-                <PlusIcon className="w-4 h-4 -ml-2" />
+        <div className="relative" ref={dropdownRef}>
+            <button onClick={() => setIsOpen(!isOpen)} title={t('article.addToPath.title')} className="p-2 rounded-full hover:bg-gray-700 transition-colors">
+                <PlusIcon className="w-6 h-6" />
             </button>
-            <div className="absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-2 z-20 opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200">
-                <h4 className="text-sm font-semibold text-gray-300 px-2 mb-2">{t('article.addToPath.heading')}</h4>
-                <div className="max-h-40 overflow-y-auto">
-                {learningPaths.length > 0 ? learningPaths.map(path => {
-                    const alreadyInPath = path.articles.some(a => a.title === articleTitle);
-                    return (
-                        <button key={path.name} onClick={() => handleAddToPath(path.name, articleTitle)} disabled={alreadyInPath} className="w-full text-left px-2 py-1.5 text-sm text-gray-300 rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                            {path.name} {alreadyInPath && "✓"}
-                        </button>
-                    )
-                }) : <p className="text-xs text-gray-500 px-2">{t('article.addToPath.noPaths')}</p>}
-                </div>
-                <div className="border-t border-gray-700 mt-2 pt-2">
-                    {isCreating ? (
-                        <div className="flex items-center gap-1">
-                            <input 
+            {isOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-20 p-2">
+                    <h4 className="text-sm font-semibold px-2 pb-2">{t('article.addToPath.heading')}</h4>
+                    <div className="max-h-40 overflow-y-auto mb-2">
+                        {learningPaths.length > 0 ? (
+                            learningPaths.map(path => (
+                                <button key={path.name} onClick={() => { onAddToPath(path.name); setIsOpen(false); }} className="block w-full text-left px-2 py-1.5 text-gray-300 hover:bg-gray-700 rounded-md text-sm">
+                                    {path.name}
+                                </button>
+                            ))
+                        ) : (
+                            <p className="px-2 py-1.5 text-gray-500 text-sm">{t('article.addToPath.noPaths')}</p>
+                        )}
+                    </div>
+                    <div className="pt-2 border-t border-gray-700">
+                        <div className="flex gap-2">
+                             <input
                                 type="text"
                                 value={newPathName}
                                 onChange={(e) => setNewPathName(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                                 placeholder={t('article.addToPath.newPathPlaceholder')}
-                                className="w-full text-sm bg-gray-700 border border-gray-600 rounded-md py-1 px-2 focus:ring-1 focus:ring-accent"
-                                autoFocus
+                                className="w-full bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
                             />
-                             <button onClick={handleCreate} className="px-2 py-1 bg-accent text-accent-contrast rounded-md text-sm">{t('common.ok')}</button>
+                            <button onClick={handleCreate} className="px-3 py-1 bg-accent text-accent-contrast rounded-md text-sm font-semibold hover:bg-accent-hover">{t('common.save')}</button>
                         </div>
-                    ) : (
-                         <button onClick={() => setIsCreating(true)} className="w-full text-left px-2 py-1.5 text-sm text-gray-300 rounded-md hover:bg-gray-700">
-                            {t('article.addToPath.create')}
-                        </button>
-                    )}
-                </div>
-            </div>
-        </div>
-    )
-}
-
-const ExportDropdown = ({ article }: { article: ArticleData }) => {
-    const { t } = useLocalization();
-    const { addNotification } = useContext(NotificationContext)!;
-    
-    const handleExport = (format: 'txt' | 'md' | 'html' | 'json') => {
-        let content = '';
-        let mimeType = '';
-        const filename = `${article.title.replace(/ /g, '_')}.${format}`;
-
-        switch (format) {
-            case 'txt':
-                mimeType = 'text/plain';
-                content = [
-                    article.title,
-                    `\n${article.introduction}\n`,
-                    ...article.sections.map(s => `\n${s.heading}\n\n${s.content}\n`),
-                    `\n${t('article.conclusion')}\n\n${article.conclusion}`
-                ].join('\n');
-                break;
-            case 'md':
-                mimeType = 'text/markdown';
-                 content = [
-                    `# ${article.title}`,
-                    `\n${article.introduction}\n`,
-                    ...article.sections.map(s => `## ${s.heading}\n\n${s.content}\n`),
-                    `\n## ${t('article.conclusion')}\n\n${article.conclusion}`
-                ].join('\n');
-                break;
-            case 'json':
-                mimeType = 'application/json';
-                content = JSON.stringify(article, null, 2);
-                break;
-            case 'html':
-                mimeType = 'text/html';
-                const styles = `
-                    <style>
-                        body { font-family: sans-serif; line-height: 1.6; color: #eee; background-color: #121212; padding: 2em; }
-                        h1 { color: #f59e0b; }
-                        h2 { border-bottom: 1px solid #444; padding-bottom: 5px; margin-top: 2em; }
-                        img { max-width: 100%; height: auto; border-radius: 8px; margin: 1em 0; }
-                    </style>
-                `;
-                const body = `
-                    <h1>${article.title}</h1>
-                    <p>${article.introduction}</p>
-                    ${article.sections.map(s => `
-                        <section>
-                            <h2>${s.heading}</h2>
-                            ${s.imageUrl ? `<img src="${s.imageUrl}" alt="${s.imagePrompt || s.heading}">` : ''}
-                            <p>${s.content.replace(/\n/g, '<br>')}</p>
-                        </section>
-                    `).join('')}
-                    <h2>${t('article.conclusion')}</h2>
-                    <p>${article.conclusion}</p>
-                `;
-                content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${article.title}</title>${styles}</head><body>${body}</body></html>`;
-                break;
-        }
-
-        const blob = new Blob([content], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        addNotification(t('notifications.exportArticleSuccess', { title: article.title }), 'success');
-    };
-
-    const formats = {
-        txt: t('article.export.formats.txt'),
-        md: t('article.export.formats.md'),
-        html: t('article.export.formats.html'),
-        json: t('article.export.formats.json'),
-    };
-    
-    return (
-        <div className="relative group">
-            <button className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors" title={t('article.export.title')} aria-label={t('article.export.title')}>
-                <DownloadIcon className="w-6 h-6" />
-            </button>
-            <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-2 z-20 opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200">
-                {Object.entries(formats).map(([key, label]) => (
-                    <button
-                        key={key}
-                        onClick={() => handleExport(key as 'txt' | 'md' | 'html' | 'json')}
-                        className="w-full text-left px-3 py-1.5 text-sm text-gray-300 rounded-md hover:bg-gray-700"
-                    >
-                        {label}
-                    </button>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-
-const TextInteractionModal = ({ text, mode, onClose, position }: { text: string, mode: 'Define' | 'Explain' | 'Visualize' | null, onClose: () => void, position: { top: number, left: number } }) => {
-    const [isLoading, setIsLoading] = useState(true);
-    const [result, setResult] = useState<string>('');
-    const [error, setError] = useState<string | null>(null);
-    const modalRef = useRef<HTMLDivElement>(null);
-    const { settings } = useContext(SettingsContext)!;
-    const { locale, t } = useLocalization();
-
-    useEffect(() => {
-        if (!mode || !text) {
-            return;
-        }
-
-        setIsLoading(true);
-        setResult('');
-        setError(null);
-
-        const handleRequest = async () => {
-            try {
-                const response = await explainOrDefine(text, mode, settings, locale);
-                setResult(response);
-            } catch (err: any) {
-                setError(err.message || `Could not ${mode.toLowerCase()} "${text}".`);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        handleRequest();
-
-    }, [mode, text, settings, locale]);
-    
-    useEffect(() => {
-        if (!mode) return;
-        
-        const handleClickOutside = (event: MouseEvent) => {
-            if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-                onClose();
-            }
-        };
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                onClose();
-            }
-        };
-
-        setTimeout(() => {
-            document.addEventListener('mousedown', handleClickOutside);
-            document.addEventListener('keydown', handleKeyDown);
-        }, 0);
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [onClose, mode]);
-
-    if (!mode || !text) {
-        return null;
-    }
-
-    const titleMap = {
-        'Define': t('interaction.modal.defineTitle', { text }),
-        'Explain': t('interaction.modal.explainTitle', { text }),
-        'Visualize': t('interaction.modal.visualizeTitle', { text }),
-    };
-
-    return (
-        <div 
-            ref={modalRef}
-            style={{ top: `${position.top}px`, left: `${position.left}px` }} 
-            className="fixed z-50 w-80 max-w-sm p-4 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl animate-fade-in"
-            role="dialog"
-            aria-labelledby="interaction-modal-title"
-            aria-modal="true"
-        >
-            <div className="flex justify-between items-center mb-3">
-                <h3 id="interaction-modal-title" className="text-md font-semibold text-accent truncate pr-2" title={titleMap[mode]}>{titleMap[mode]}</h3>
-                <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white" aria-label={t('common.close')}>
-                    <CloseIcon className="w-5 h-5"/>
-                </button>
-            </div>
-            <div className="text-sm text-gray-300 max-h-60 overflow-y-auto">
-                {isLoading ? (
-                    <div className="flex justify-center items-center h-24">
-                        <LoadingSpinner text={mode === 'Visualize' ? t('interaction.modal.visualizing') : t('interaction.modal.thinking')} />
                     </div>
-                ) : error ? (
-                    <p className="text-red-400">{error}</p>
-                ) : mode === 'Visualize' ? (
-                     <img src={result} alt={t('interaction.modal.visualizeTitle', { text })} className="w-full h-auto object-cover rounded-md" />
-                ) : (
-                    <p>{result}</p>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 };
 
-
-// Main Component
-interface ArticleViewProps {
-  article: ArticleData | null;
-  isLoading: boolean;
-  error: string | null;
-  onRetry: () => void;
-  starterTopics: { [key: string]: StarterTopic[] };
-  isLoadingTopics: boolean;
-  onTopicClick: (topic: string) => void;
-  onGenerateImage: (sectionIndex: number) => void;
-  onGenerateAllImages: () => void;
-  onGenerateVideo: (sectionIndex: number) => void;
-  generatingImages: number[];
-  generatingVideoInfo: { index: number | null, status: string | null };
-  onEditImage: (sectionIndex: number, prompt: string) => void;
-  editingImageIndex: number | null;
-  fullArticleText: string;
-  isBookmarked: boolean;
-}
-
-const ArticleView: React.FC<ArticleViewProps> = ({ article, isLoading, error, onRetry, starterTopics, isLoadingTopics, onTopicClick, onGenerateImage, onGenerateAllImages, onGenerateVideo, generatingImages, generatingVideoInfo, onEditImage, editingImageIndex, fullArticleText, isBookmarked }) => {
-    const { settings } = useContext(SettingsContext)!;
-    const { toggleBookmark } = useContext(UserDataContext)!;
+const TableOfContents: React.FC<{ sections: ArticleSection[], conclusionTitle: string, timelineTitle: string | null }> = ({ sections, conclusionTitle, timelineTitle }) => {
+    const [activeId, setActiveId] = useState<string | null>(null);
+    const observer = useRef<IntersectionObserver | null>(null);
     const { t } = useLocalization();
-    
-    const [interaction, setInteraction] = useState<{ text: string, mode: 'Define' | 'Explain' | 'Visualize' | null, position: { top: number, left: number } }>({ text: '', mode: null, position: { top: 0, left: 0 }});
-    const articleContentRef = useRef<HTMLDivElement>(null);
-
-    const handleTextSelection = useCallback(() => {
-        const selection = window.getSelection();
-        if (selection && selection.toString().trim().length > 1 && articleContentRef.current?.contains(selection.anchorNode)) {
-            const selectedText = selection.toString().trim();
-            const range = selection.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
-            
-            const popoverHeight = 50; 
-            const spaceBelow = window.innerHeight - rect.bottom;
-            const top = spaceBelow > popoverHeight + 20 
-                ? rect.bottom + window.scrollY + 5 
-                : rect.top + window.scrollY - popoverHeight - 5;
-            
-            setInteraction(prev => ({ ...prev, text: selectedText, position: { top, left: rect.left + window.scrollX + rect.width / 2 } }));
-        } else {
-             if (!interaction.mode) {
-                 setInteraction(prev => ({ ...prev, text: '' }));
-            }
-        }
-    }, [interaction.mode]);
 
     useEffect(() => {
-        document.addEventListener('mouseup', handleTextSelection);
-        return () => document.removeEventListener('mouseup', handleTextSelection);
-    }, [handleTextSelection]);
+        const handleObserver = (entries: IntersectionObserverEntry[]) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    setActiveId(entry.target.id);
+                }
+            });
+        };
+        
+        observer.current = new IntersectionObserver(handleObserver, {
+            rootMargin: '-20% 0px -80% 0px', // Trigger when section is in the top 20% of the viewport
+            threshold: 0
+        });
+
+        const elements = sections.map((_, index) => document.getElementById(`section-${index}`)).filter(Boolean);
+        const conclusionEl = document.getElementById('conclusion');
+        const timelineEl = document.getElementById('timeline');
+
+        if (conclusionEl) elements.push(conclusionEl);
+        if (timelineEl) elements.push(timelineEl);
+        
+        elements.forEach(el => observer.current?.observe(el!));
+
+        return () => observer.current?.disconnect();
+    }, [sections, conclusionTitle, timelineTitle]);
+
+    const tocItems = [
+        ...sections.map((section, index) => ({ id: `section-${index}`, title: section.heading })),
+        { id: 'conclusion', title: conclusionTitle },
+        ...(timelineTitle ? [{ id: 'timeline', title: timelineTitle }] : [])
+    ];
     
-    const openInteractionModal = (mode: 'Define' | 'Explain' | 'Visualize') => {
-        if (interaction.text) {
-             const modalTop = window.scrollY + window.innerHeight / 2 - 150; 
-             const modalLeft = window.innerWidth / 2 - 160; 
-            setInteraction(prev => ({ ...prev, mode, position: { top: modalTop, left: modalLeft } }));
+    return (
+        <nav className="toc">
+            <h3 className="font-bold text-gray-300 text-sm uppercase tracking-wider mb-3">On this page</h3>
+            <ul className="space-y-2">
+                {tocItems.map(item => (
+                    <li key={item.id}>
+                        <a 
+                            href={`#${item.id}`} 
+                            className={`toc-link flex items-center gap-3 text-sm text-gray-400 hover:text-white p-1 rounded ${activeId === item.id ? 'active font-semibold' : ''}`}
+                        >
+                            <span className={`toc-dot w-1.5 h-1.5 bg-gray-600 rounded-full transition-all duration-200`}></span>
+                            <span className="truncate">{item.title}</span>
+                        </a>
+                    </li>
+                ))}
+            </ul>
+        </nav>
+    );
+};
+
+
+const ArticleView: React.FC<ArticleViewProps> = ({ article, onGenerateImage, onGenerateAllImages, onGenerateVideo, onToggleBookmark, isBookmarked, onAddToPath, onCreatePath, learningPaths, settings, addNotification, addImageToLibrary, onSearch }) => {
+    const { t, locale } = useLocalization();
+    const articleRef = useRef<HTMLDivElement>(null);
+    const [selectedText, setSelectedText] = useState('');
+    const [toolbarPos, setToolbarPos] = useState<{ top: number; left: number } | null>(null);
+    const [interactionMode, setInteractionMode] = useState<'Define' | 'Explain' | 'Visualize' | null>(null);
+    const [isCopying, setIsCopying] = useState<number | null>(null);
+    const [videoStatuses, setVideoStatuses] = useState<{ [key: number]: string }>({});
+    const [editingImage, setEditingImage] = useState<{ sectionIndex: number, imageUrl: string } | null>(null);
+
+
+    const handleMouseUp = useCallback(() => {
+        const selection = window.getSelection();
+        const text = selection?.toString().trim() ?? '';
+        if (text && articleRef.current?.contains(selection.anchorNode)) {
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            const articleRect = articleRef.current.getBoundingClientRect();
+            setSelectedText(text);
+            setToolbarPos({
+                top: rect.top - articleRect.top,
+                left: rect.left - articleRect.left + rect.width / 2,
+            });
+        } else {
+            setSelectedText('');
+            setToolbarPos(null);
         }
-    };
-    
-     const closeInteractionModal = useCallback(() => {
-        setInteraction({ text: '', mode: null, position: { top: 0, left: 0 }});
     }, []);
 
-    const missingImagesCount = useMemo(() =>
-        article?.sections.filter(s => s.imagePrompt && !s.imageUrl).length ?? 0,
-    [article]);
-
-    if (isLoading && !article) {
-        return <div className="flex items-center justify-center h-96"><LoadingSpinner text={t('article.creating')} /></div>;
-    }
-
-    if (error) {
-        return (
-            <div className="text-center p-8 flex flex-col items-center justify-center min-h-[400px] bg-gray-800/30 rounded-lg">
-                <ExclamationTriangleIcon className="w-16 h-16 text-red-400 mb-4"/>
-                <h2 className="text-xl font-bold text-red-400 mb-2">{t('article.error.title')}</h2>
-                <p className="text-gray-400 mb-6 max-w-md">{error}</p>
-                <button onClick={onRetry} className="flex items-center justify-center gap-2 mx-auto px-4 py-2 bg-accent text-accent-contrast font-semibold rounded-full hover:bg-accent-hover transition-colors">
-                    <ReloadIcon className="w-5 h-5"/>
-                    {t('common.retry')}
-                </button>
-            </div>
-        );
-    }
-
-    if (!article) {
-        return <WelcomeScreen starterTopics={starterTopics} onTopicClick={onTopicClick} isLoadingTopics={isLoadingTopics}/>;
-    }
-    
-    const textSizeClass = {
-        [TextSize.Small]: 'text-sm',
-        [TextSize.Standard]: 'text-base',
-        [TextSize.Large]: 'text-lg',
+    const handleInteraction = (action: 'Define' | 'Explain' | 'Visualize') => {
+        setInteractionMode(action);
+        setToolbarPos(null);
     };
 
+    const handleCopyPrompt = (prompt: string, index: number) => {
+        navigator.clipboard.writeText(prompt);
+        setIsCopying(index);
+        setTimeout(() => setIsCopying(null), 2000);
+    };
+
+    const handleVideoGeneration = async (sectionIndex: number) => {
+        const onStatusUpdate = (status: string) => {
+            setVideoStatuses(prev => ({ ...prev, [sectionIndex]: status }));
+        };
+
+        try {
+            await onGenerateVideo(sectionIndex, onStatusUpdate);
+            setVideoStatuses(prev => {
+                const newStatuses = { ...prev };
+                delete newStatuses[sectionIndex];
+                return newStatuses;
+            });
+        } catch (error) {
+            setVideoStatuses(prev => ({ ...prev, [sectionIndex]: t('errors.videoGenerationFailed') }));
+        }
+    };
+
+    const handleEditComplete = (newImageUrl: string, editPrompt: string, sectionIndex: number) => {
+        const originalPrompt = article.sections[sectionIndex].imagePrompt || '';
+        const combinedPrompt = t('panels.imageLibrary.editedPrompt', { editPrompt, originalPrompt });
+        
+        addImageToLibrary({
+            imageUrl: newImageUrl,
+            prompt: combinedPrompt,
+            topic: article.title,
+        });
+
+        // The parent component (App.tsx) needs to update the article state.
+        // For now, we rely on the parent's logic to handle the visual update.
+        // A more direct state update could be implemented via a callback if needed.
+    };
+
+    const hasMissingImages = article.sections.some(s => s.imagePrompt && !s.imageUrl);
+    const missingImageCount = article.sections.filter(s => s.imagePrompt && !s.imageUrl).length;
+    const textBaseSize = settings.textSize === 'sm' ? 'text-sm' : settings.textSize === 'lg' ? 'text-lg' : 'text-base';
+
+
     return (
-        <div className={`prose prose-invert max-w-none prose-p:text-gray-300 prose-headings:text-gray-100 prose-h2:mt-12 prose-h2:mb-4 prose-h2:border-b prose-h2:border-gray-700/80 prose-h2:pb-3 ${textSizeClass[settings.textSize]}`}>
-            <div className="flex justify-between items-start">
-                <h1 className="text-4xl font-bold mb-2">{article.title}</h1>
-                <div className="flex items-center gap-1 not-prose">
-                     <ExportDropdown article={article} />
-                     <button 
-                        onClick={() => toggleBookmark(article.title)} 
-                        className={`p-2 rounded-full transition-colors hover:bg-gray-700/80 ${isBookmarked ? 'text-accent hover:text-accent-hover' : 'text-gray-400 hover:text-white'}`} 
-                        title={isBookmarked ? t('article.bookmark.remove') : t('article.bookmark.add')}
-                        aria-label={isBookmarked ? t('article.bookmark.remove') : t('article.bookmark.add')}
-                     >
-                        <BookmarkIcon className="w-6 h-6" isFilled={isBookmarked} />
-                    </button>
-                    <AddToPathDropdown articleTitle={article.title} />
-                </div>
+        <div className="max-w-7xl mx-auto grid grid-cols-12 gap-8 px-4 md:px-8">
+            <div className="hidden lg:block col-span-3 py-8">
+                <TableOfContents 
+                    sections={article.sections}
+                    conclusionTitle={t('article.conclusion')}
+                    timelineTitle={article.timeline && article.timeline.length > 0 ? t('article.keyMoments') : null}
+                />
             </div>
-
-            <p className="lead text-gray-400">{article.introduction}</p>
-
-            <SummaryDisplay fullArticleText={fullArticleText} />
-            
-            {missingImagesCount > 0 && (
-                <div className="my-6 text-center not-prose">
-                    <button 
-                        onClick={onGenerateAllImages} 
-                        disabled={generatingImages.length > 0}
-                        className="inline-flex items-center justify-center gap-3 px-6 py-2 bg-accent/80 text-accent-contrast text-sm font-semibold rounded-full hover:bg-accent transition-all transform active:scale-95 disabled:bg-gray-600 disabled:cursor-not-allowed"
-                    >
-                        {generatingImages.length > 0 ? (
-                            <>
-                                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span>{t('article.generatingAllImages', { count: generatingImages.length })}</span>
-                            </>
-                        ) : (
-                            <>
-                                <ImageIcon className="w-5 h-5" />
-                                {t('article.generateAllImages', { count: missingImagesCount })}
-                            </>
-                        )}
-                    </button>
-                </div>
-            )}
-
-            <div ref={articleContentRef}>
-                {article.sections.map((section, index) => (
-                    <section key={index}>
-                        <h2>{section.heading}</h2>
-                        <p>{section.content}</p>
-                        <MediaDisplay
-                            imageUrl={section.imageUrl}
-                            videoUrl={section.videoUrl}
-                            prompt={section.imagePrompt}
-                            onGenerateImage={() => onGenerateImage(index)}
-                            onGenerateVideo={() => onGenerateVideo(index)}
-                            isGeneratingImage={generatingImages.includes(index)}
-                            generatingVideoInfo={generatingVideoInfo.index === index ? generatingVideoInfo : { index: null, status: null }}
-                            onEdit={(prompt) => onEditImage(index, prompt)}
-                            isEditing={editingImageIndex === index}
+            <div className="col-span-12 lg:col-span-9">
+                <main ref={articleRef} onMouseUp={handleMouseUp} className="prose prose-invert max-w-none lg:prose-lg py-8">
+                    {toolbarPos && <InteractionToolbar position={toolbarPos} onAction={handleInteraction} />}
+                    {interactionMode && <InteractionModal mode={interactionMode} text={selectedText} onClose={() => setInteractionMode(null)} settings={settings} />}
+                    {editingImage && (
+                        <EditImageModal
+                            imageUrl={editingImage.imageUrl}
+                            onClose={() => setEditingImage(null)}
+                            onEditComplete={(newUrl, prompt) => handleEditComplete(newUrl, prompt, editingImage.sectionIndex)}
                         />
-                    </section>
-                ))}
-            </div>
+                    )}
+                    
+                    <div className="flex justify-between items-start gap-4">
+                        <h1 className="mb-2">{article.title}</h1>
+                        <div className="flex items-center gap-1 not-prose">
+                            <button onClick={onToggleBookmark} title={isBookmarked ? t('article.bookmark.remove') : t('article.bookmark.add')} className="p-2 rounded-full hover:bg-gray-700 transition-colors">
+                                <BookmarkIcon className="w-6 h-6" isFilled={isBookmarked} />
+                            </button>
+                            <AddToPathDropdown learningPaths={learningPaths} onAddToPath={onAddToPath} onCreatePath={onCreatePath}/>
+                        </div>
+                    </div>
+                    <p className={`lead mt-0 ${textBaseSize}`}>{article.introduction}</p>
 
-            {article.conclusion && (
-                <>
-                    <h2>{t('article.conclusion')}</h2>
+                    <SummaryWidget article={article} addNotification={addNotification} />
+
+                    {hasMissingImages && (
+                        <div className="not-prose text-center my-6">
+                            <button onClick={onGenerateAllImages} className="px-4 py-2 bg-accent/20 text-accent rounded-lg hover:bg-accent/30 transition-colors">
+                                {t('article.generateAllImages', { count: missingImageCount })}
+                            </button>
+                        </div>
+                    )}
+                    
+                    <div className={`space-y-8 ${textBaseSize}`}>
+                        {article.sections.map((section, index) => (
+                            <section key={index}>
+                                <h2 id={`section-${index}`}>{section.heading}</h2>
+                                <p>{section.content}</p>
+                                {section.imagePrompt && (
+                                    <div className="not-prose my-6 p-4 bg-gray-800/50 rounded-lg">
+                                        {/* Image Display Area */}
+                                        {section.imageUrl ? (
+                                            <div className="relative group mb-4">
+                                                <img src={section.imageUrl} alt={section.heading} className="rounded-lg w-full" />
+                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                                                    <button 
+                                                        onClick={() => setEditingImage({ sectionIndex: index, imageUrl: section.imageUrl! })}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-lg hover:bg-white/30">
+                                                        <WandIcon className="w-5 h-5" /> Edit
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                                                <div className="flex items-start gap-3 flex-grow">
+                                                    <ImageIcon className="w-6 h-6 text-accent flex-shrink-0 mt-1" />
+                                                    <p className="text-sm text-gray-400 italic">
+                                                        <span className="font-bold text-gray-300">{t('article.imagePrompt')}:</span> "{section.imagePrompt}"
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                    <button onClick={() => handleCopyPrompt(section.imagePrompt!, index)} className="p-2 text-gray-400 hover:text-white" title={t('common.copyPrompt')}>
+                                                        {isCopying === index ? <span className="text-xs text-accent">{t('common.copied')}</span> : <ClipboardCopyIcon className="w-5 h-5" />}
+                                                    </button>
+                                                    <button onClick={() => onGenerateImage(index)} className="px-4 py-2 text-sm font-semibold bg-gray-700/80 text-gray-200 rounded-lg hover:bg-gray-700">
+                                                        <div className="flex items-center gap-2">
+                                                            <ImageIcon className="w-4 h-4" /> <span>{t('article.generateImage')}</span>
+                                                        </div>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Video Display Area */}
+                                        <div className="border-t border-gray-700/50 pt-4">
+                                            {section.videoUrl ? (
+                                                <video controls src={section.videoUrl} className="w-full rounded-lg" />
+                                            ) : videoStatuses[index] ? (
+                                                <LoadingSpinner text={videoStatuses[index]} />
+                                            ) : (
+                                                <div className="flex justify-end">
+                                                    <button onClick={() => handleVideoGeneration(index)} className="px-4 py-2 text-sm font-semibold bg-gray-700/80 text-gray-200 rounded-lg hover:bg-gray-700">
+                                                        <div className="flex items-center gap-2">
+                                                            <VideoCameraIcon className="w-4 h-4" /> <span>{t('article.generateVideo')}</span>
+                                                        </div>
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </section>
+                        ))}
+                    </div>
+
+                    <h2 id="conclusion">{t('article.conclusion')}</h2>
                     <p>{article.conclusion}</p>
-                </>
-            )}
-            
-             <TimelineDisplay timeline={article.timeline} onEventClick={onTopicClick} />
-            
-             {interaction.text && !interaction.mode && (
-                <div 
-                    style={{ top: `${interaction.position.top}px`, left: `${interaction.position.left}px`, transform: 'translateX(-50%)' }}
-                    className="fixed z-40 flex items-center gap-1 p-1 bg-gray-900 border border-gray-700 rounded-full shadow-lg animate-fade-in"
-                    role="toolbar"
-                    aria-label={t('interaction.toolbarLabel')}
-                >
-                    <button onClick={() => openInteractionModal('Define')} className="p-3 rounded-full hover:bg-gray-700" title={t('interaction.define')} aria-label={t('interaction.define')}><WandIcon className="w-5 h-5"/></button>
-                    <button onClick={() => openInteractionModal('Explain')} className="p-3 rounded-full hover:bg-gray-700" title={t('interaction.explain')} aria-label={t('interaction.explain')}><TextSelectIcon className="w-5 h-5"/></button>
-                    <button onClick={() => openInteractionModal('Visualize')} className="p-3 rounded-full hover:bg-gray-700" title={t('interaction.visualize')} aria-label={t('interaction.visualize')}><ImageIcon className="w-5 h-5"/></button>
-                </div>
-            )}
-            
-            <TextInteractionModal 
-                text={interaction.text}
-                mode={interaction.mode}
-                onClose={closeInteractionModal}
-                position={interaction.position}
-            />
-
+                    
+                    {article.timeline && article.timeline.length > 0 && (
+                        <Timeline events={article.timeline} onSearch={onSearch} />
+                    )}
+                </main>
+            </div>
         </div>
     );
 };

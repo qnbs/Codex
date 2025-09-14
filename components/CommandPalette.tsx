@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ArticleData, UserDataContextType } from '../types';
+import { ArticleData } from '../types';
 import { 
     HistoryIcon, BookmarkIcon, PathIcon, CameraIcon, CogIcon, QuestionMarkCircleIcon, 
     CosmicLeapIcon, ImageIcon, DownloadIcon, UploadIcon, SearchIcon
@@ -16,7 +16,8 @@ type Command = {
     condition?: () => boolean;
 };
 
-interface CommandPaletteProps extends Omit<UserDataContextType, 'handleImportData'> {
+// FIX: Redefined props to only include what is necessary, removing the extension of UserDataContextType.
+interface CommandPaletteProps {
     isOpen: boolean;
     onClose: () => void;
     onSearch: (topic: string) => void;
@@ -24,6 +25,11 @@ interface CommandPaletteProps extends Omit<UserDataContextType, 'handleImportDat
     onSerendipity: () => void;
     article: ArticleData | null;
     onGenerateAllImages: () => void;
+    bookmarks: string[];
+    history: string[];
+    handleSaveSnapshot: () => void;
+    handleExportData: () => void;
+    handleTriggerImport: () => void;
 }
 
 const useCommands = (props: CommandPaletteProps): Command[] => {

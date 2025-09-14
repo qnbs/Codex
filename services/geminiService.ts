@@ -14,14 +14,20 @@ const callGeminiWithRetry = async <T,>(apiCall: () => Promise<T>, context: strin
     const errorMessages = {
         de: {
             rateLimit: "Das API-Ratenlimit wurde überschritten. Bitte überprüfen Sie Ihren Plan und Ihre Abrechnungsdetails oder versuchen Sie es später erneut.",
-            maxRetries: `[${context}] Maximale Wiederholungsversuche überschritten.`
+            maxRetries: `[${context}] Maximale Wiederholungsversuche überschritten.`,
+            offline: "Sie scheinen offline zu sein. Diese Funktion erfordert eine Internetverbindung."
         },
         en: {
             rateLimit: "The API rate limit has been exceeded. Please check your plan and billing details, or try again later.",
-            maxRetries: `[${context}] Max retries exceeded.`
+            maxRetries: `[${context}] Max retries exceeded.`,
+            offline: "You appear to be offline. This feature requires an internet connection."
         }
     };
     const messages = errorMessages[locale] || errorMessages.en;
+
+    if (!navigator.onLine) {
+        throw new Error(messages.offline);
+    }
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
@@ -148,7 +154,7 @@ export const generateArticleContent = async (topic: string, settings: AppSetting
   } catch (error) {
     console.error(`Error generating article for "${topic}":`, error);
     if (error instanceof Error) {
-        if (error.message.includes("API-Ratenlimit") || error.message.includes("rate limit")) throw error;
+        if (error.message.includes("API-Ratenlimit") || error.message.includes("rate limit") || error.message.includes("offline")) throw error;
         if (error.message.includes("SAFETY")) {
              const message = locale === 'de'
                 ? `Das Thema "${topic}" hat einen Sicherheitsfilter ausgelöst. Bitte versuchen Sie ein anderes Thema.`
@@ -187,6 +193,9 @@ export const generateImageForSection = async (prompt: string, settings: AppSetti
         return `data:image/jpeg;base64,${base64ImageBytes}`;
     } catch(error) {
         console.error('Error generating image for prompt "', prompt, '":', error);
+         if (error instanceof Error && (error.message.includes("API-Ratenlimit") || error.message.includes("rate limit") || error.message.includes("offline"))) {
+            throw error;
+        }
         const safetyMessage = locale === 'de' ? 'Die Anweisung hat einen Sicherheitsfilter ausgelöst.' : 'The prompt triggered a safety filter.';
         const complexMessage = locale === 'de' ? 'Der Prompt könnte zu komplex oder eingeschränkt sein.' : 'The prompt may be too komplex oder eingeschränkt sein.';
         const errorMessage = error instanceof Error && error.message.includes('SAFETY') ? safetyMessage : complexMessage;
@@ -233,6 +242,9 @@ export const generateVideoForSection = async (
 
     } catch(error) {
         console.error('Error generating video for prompt "', prompt, '":', error);
+         if (error instanceof Error && (error.message.includes("API-Ratenlimit") || error.message.includes("rate limit") || error.message.includes("offline"))) {
+            throw error;
+        }
         const message = locale === 'de' ? 'Videogenerierung fehlgeschlagen.' : 'Video generation failed.';
         throw new Error(message);
     }
@@ -252,7 +264,7 @@ export const getRelatedTopics = async (topic: string, settings: AppSettings, loc
         return parseJsonResponse<RelatedTopic[]>(response.text, "related topics", locale);
     } catch (error) {
         console.error("Error generating related topics:", error);
-        if (error instanceof Error && (error.message.includes("API-Ratenlimit") || error.message.includes("rate limit"))) {
+        if (error instanceof Error && (error.message.includes("API-Ratenlimit") || error.message.includes("rate limit") || error.message.includes("offline"))) {
             throw error;
         }
         const message = locale === 'de' ? "Fehler beim Generieren verwandter Themen." : "Failed to generate related topics.";
@@ -275,7 +287,7 @@ export const getSerendipitousTopic = async (currentTopic: string, locale: Locale
         return result.topic;
     } catch (error) {
         console.error("Error generating serendipitous topic:", error);
-        if (error instanceof Error && (error.message.includes("API-Ratenlimit") || error.message.includes("rate limit"))) {
+        if (error instanceof Error && (error.message.includes("API-Ratenlimit") || error.message.includes("rate limit") || error.message.includes("offline"))) {
             throw error;
         }
         const message = locale === 'de' ? "Fehler beim Generieren eines Kosmischer Sprung-Themas." : "Failed to generate a Cosmic Leap topic.";
@@ -304,7 +316,7 @@ export const generateSummary = async (articleText: string, type: SummaryType, lo
         return result.response;
     } catch (error) {
         console.error(`Error generating summary type ${type}:`, error);
-        if (error instanceof Error && (error.message.includes("API-Ratenlimit") || error.message.includes("rate limit"))) {
+        if (error instanceof Error && (error.message.includes("API-Ratenlimit") || error.message.includes("rate limit") || error.message.includes("offline"))) {
             throw error;
         }
         const message = locale === 'de' ? `Zusammenfassung konnte nicht generiert werden: ${type}` : `Could not generate summary: ${type}`;
@@ -370,7 +382,7 @@ export const explainOrDefine = async (text: string, mode: 'Define' | 'Explain' |
 
     } catch (error) {
         console.error(`Error in ${mode} for text "${text}":`, error);
-        if (error instanceof Error && (error.message.includes("API-Ratenlimit") || error.message.includes("rate limit"))) {
+        if (error instanceof Error && (error.message.includes("API-Ratenlimit") || error.message.includes("rate limit") || error.message.includes("offline"))) {
             throw error;
         }
         if (locale === 'de') {
@@ -415,7 +427,7 @@ export const editImage = async (base64ImageDataUrl: string, prompt: string, loca
 
     } catch (error) {
         console.error(`Error editing image for prompt "${prompt}":`, error);
-        if (error instanceof Error && (error.message.includes("API-Ratenlimit") || error.message.includes("rate limit"))) {
+        if (error instanceof Error && (error.message.includes("API-Ratenlimit") || error.message.includes("rate limit") || error.message.includes("offline"))) {
             throw error;
         }
         const message = locale === 'de' ? `Bildbearbeitung fehlgeschlagen.` : `Image editing failed.`;
